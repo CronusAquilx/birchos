@@ -119,7 +119,7 @@ export async function playList(list: Track[], i: number) {
     const result = await musicApi<{ ids: string[]; error?: string }>({ op: "video", q: `${t.artist} ${t.title}`, title: t.title, artist: t.artist });
     if (my !== playId) return;
     const first = result.ids[0];
-    if (!first) { set({ loading: false, paused: true, status: result.error ?? "No matching playable video found" }); return; }
+    if (!first) { set({ status: "Switching to audio…" }); void audioFallback(t, my); return; }
     const player = await ready;
     if (my !== playId) return;
     if (!player) { set({ loading: false, paused: true, fallbackId: first, status: "YouTube controls unavailable — open player" }); return; }
