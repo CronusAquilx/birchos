@@ -157,12 +157,8 @@ export function getProxyController(prefs: Prefs): Promise<Controller> {
 /** Long movies outlive the browser's idle-worker timeout; re-attach periodically so mid-stream segment fetches keep routing. */
 export function keepProxyAlive(prefs: Prefs, ms = 15000): () => void {
   const timer = setInterval(() => {
-    void getProxyController(prefs).then((controller) => {
-      const c = controller as any;
-      c.guardServiceWorkerRevive = false;
-      try { c.setupMessagePort?.(); } catch { /* ignore */ }
-      void navigator.serviceWorker?.getRegistration("/scramjet/p/").then((r) => r?.active?.postMessage?.({ type: "astra-keepalive" })).catch(() => {});
-    }).catch(() => {});
+    // Ping only: re-creating the message port mid-stream would orphan in-flight video/audio requests.
+    void prefs; void navigator.serviceWorker?.getRegistration("/scramjet/p/").then((r) => r?.active?.postMessage?.({ type: "astra-keepalive" })).catch(() => {});
   }, ms);
   return () => clearInterval(timer);
 }
