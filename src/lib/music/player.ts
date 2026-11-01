@@ -133,20 +133,8 @@ export async function playList(list: Track[], i: number) {
 }
 let proxyFrame: HTMLIFrameElement | null = null;
 function clearProxy() { proxyFrame?.remove(); proxyFrame = null; if (typeof document !== "undefined") document.querySelectorAll<HTMLElement>(".qaisify-playback-host").forEach(el => { el.style.visibility = ""; }); }
-async function proxyOrAudio(t: Track, my: number) {
-  const id = candidates[0];
-  if (false && prefsRef && id && typeof document !== "undefined") {
-    try {
-      clearProxy(); yt?.stopVideo(); const ytHost = document.querySelector<HTMLElement>(".qaisify-playback-host"); if (ytHost) ytHost.style.visibility = "hidden";
-      const f = document.createElement("iframe"); f.className = "qaisify-playback-host"; f.allow = "autoplay; encrypted-media"; f.style.cssText = "position:fixed;width:320px;height:180px;right:12px;bottom:90px;border:0;border-radius:10px;z-index:2147483000;background:#000";
-      document.body.appendChild(f); proxyFrame = f;
-      await openProxied(f, `https://www.youtube.com/watch?v=${encodeURIComponent(id)}&autoplay=1`, prefsRef);
-      if (my !== playId) { clearProxy(); return; }
-      recordPlayback(); set({ mode: null, fallbackId: id, loading: false, paused: false, status: "YouTube · via proxy" }); return;
-    } catch { clearProxy(); }
-  }
-  return audioFallback(t, my);
-}
+// Blocked YouTube embeds go straight to server-fetched audio (network restrictions only block the YouTube player).
+function proxyOrAudio(t: Track, my: number) { clearProxy(); return audioFallback(t, my); }
 async function audioFallback(t: Track, my: number) {
   ensure();
   try {
