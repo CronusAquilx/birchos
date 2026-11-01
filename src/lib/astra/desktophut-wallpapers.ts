@@ -587,8 +587,9 @@ import image292 from "@/assets/wallpapers/app1010370-preview.jpg.asset.json";
 import video293 from "@/assets/wallpapers/app1003980-preview.mp4.asset.json";
 import image293 from "@/assets/wallpapers/app1003980-preview.jpg.asset.json";
 import type { CatalogWallpaper } from "./wallpaper-catalog";
+import { WALLPAPER_ORIGINALS } from "./wallpaper-originals";
 
-export const DESKTOPHUT_WALLPAPERS: CatalogWallpaper[] = [
+const PREVIEW_WALLPAPERS: CatalogWallpaper[] = [
   { id: "app1056617-preview", title: "Cute Anime Hot Girl Live Wallpaper 4K", source: "https://www.desktophut.com/Cute-Anime-Hot-Girl-Live-Wallpaper-4K", resolution: "3840x2160", video: video0.url, image: image0.url },
   { id: "app1004179-preview", title: "Live Wallpaper 4K Asta Black Clover", source: "https://www.desktophut.com/Live-Wallpaper-4K-Asta-Black-Clover", resolution: "3840x2160", video: video1.url, image: image1.url },
   { id: "app1073503-preview", title: "Pain Nagato Chibaku Tensei Jutsu Live Wallpaper 4K", source: "https://www.desktophut.com/Pain-Nagato-Chibaku-Tensei-Jutsu-Live-Wallpaper-4K", resolution: "3840x2160", video: video2.url, image: image2.url },
@@ -884,3 +885,8 @@ export const DESKTOPHUT_WALLPAPERS: CatalogWallpaper[] = [
   { id: "app1010370-preview", title: "4K Beautiful Girl With Glasses Live Wallpaper For PC", source: "https://www.desktophut.com/4K-Beautiful-Girl-With-Glasses-Live-Wallpaper-For-PC", resolution: "3840x2160", video: video292.url, image: image292.url },
   { id: "app1003980-preview", title: "Cool Joker 4k live wallpaper", source: "https://www.desktophut.com/Cool-Joker-4k-live-wallpaper", resolution: "3840x2160", video: video293.url, image: image293.url },
 ];
+
+export const DESKTOPHUT_WALLPAPERS: CatalogWallpaper[] = PREVIEW_WALLPAPERS.map(item => {
+  const original = WALLPAPER_ORIGINALS[item.id];
+  return original ? { ...item, ...original, originalQuality: true } : { ...item, resolution: "480px preview", originalQuality: false };
+});

@@ -7,7 +7,12 @@ export type CatalogWallpaper = {
   video: string;
   image: string;
   resolution: string;
+  originalQuality?: boolean;
 };
+
+export function upgradeWallpaperSource(src: string, upgrades: Record<string, string>): string {
+  return upgrades[src] ?? src;
+}
 
 export function wallpaperPatch(layout: AppearanceLayout, item: CatalogWallpaper): Partial<AppearanceProfile> {
   const media = { wallpaperType: "video" as const, wallpaperPoster: item.image, wallpaperPlayback: true, artwork: true };
