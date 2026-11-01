@@ -11,15 +11,15 @@ export const SERVERS = [
   { id: "audius", name: "Audius" }, { id: "deezer", name: "Deezer · preview" },
 ] as const;
 export type Server = (typeof SERVERS)[number]["id"];
-type State = { queue: Track[]; cur: number; status: string; paused: boolean; time: number; dur: number; server: Server; mode: "audio" | "video" | null; volume: number; shuffle: boolean; repeat: "off" | "all" | "one"; loading: boolean; fallbackId: string | null };
-let state: State = { queue: [], cur: -1, status: "", paused: true, time: 0, dur: 0, server: "youtube", mode: null, volume: .7, shuffle: false, repeat: "off", loading: false, fallbackId: null };
+type State = { queue: Track[]; cur: number; status: string; paused: boolean; time: number; dur: number; server: Server; mode: "audio" | "video" | null; volume: number; shuffle: boolean; repeat: "off" | "all" | "one"; loading: boolean; fallbackId: string | null; speed: number; sleepUntil: number | null; history: Track[] };
+let state: State = { queue: [], cur: -1, status: "", paused: true, time: 0, dur: 0, server: "youtube", mode: null, volume: .7, shuffle: false, repeat: "off", loading: false, fallbackId: null, speed: 1, sleepUntil: null, history: [] };
 const subs = new Set<() => void>();
 const set = (p: Partial<State>) => { state = { ...state, ...p }; subs.forEach(f => f()); };
 let audio: HTMLAudioElement | null = null;
 let token = "";
 let playId = 0;
 let prefsRef: Prefs | null = null;
-interface YTPlayer { loadVideoById(id: string): void; playVideo(): void; pauseVideo(): void; stopVideo(): void; setVolume(v: number): void; seekTo(t: number, ahead: boolean): void; getCurrentTime(): number; getDuration(): number; destroy(): void; }
+interface YTPlayer { loadVideoById(id: string): void; playVideo(): void; pauseVideo(): void; stopVideo(): void; setVolume(v: number): void; setPlaybackRate?(v: number): void; seekTo(t: number, ahead: boolean): void; getCurrentTime(): number; getDuration(): number; destroy(): void; }
 type YTWindow = Window & { YT?: { Player: new (el: HTMLElement, options: Record<string, unknown>) => YTPlayer }; onYouTubeIframeAPIReady?: () => void };
 let yt: YTPlayer | null = null;
 let ytReady: Promise<YTPlayer> | null = null;
@@ -33,7 +33,7 @@ export const artUrl = (src: string) => src && token && /^https:\/\/([a-z0-9-]+\.
 export async function musicApi<T>(params: Record<string, string>): Promise<T> {
   await musicToken();
   const res = await fetch(`/api/music?${new URLSearchParams(params)}`, { headers: { authorization: `Bearer ${token}` } });
-  if (!res.ok) throw new Error(res.status === 401 ? "Session expired — sign in again" : `Music couldn't load (${res.status})`);
+  if (!res.ok) { const body = await res.json().catch(() => null); throw new Error(res.status === 401 ? "Session expired — sign in again" : body?.error ?? `Music couldn't load (${res.status})`); }
   return res.json();
 }
 export function downloadUrl(t: Track) { return `/api/music?${new URLSearchParams({ op: "download", title: t.title, artist: t.artist, duration: String(t.duration || 0), preview: t.preview ?? "", token })}`; }
@@ -83,6 +83,15 @@ function youtubePlayer(): Promise<YTPlayer> {
   return ytReady;
 }
 export function setServer(s: Server) { set({ server: s }); }
+let sleepTimeout: ReturnType<typeof setTimeout> | null = null;
+export function setSleepTimer(minutes: number | null) {
+  if (sleepTimeout) clearTimeout(sleepTimeout);
+  sleepTimeout = null;
+  set({ sleepUntil: minutes === null ? null : Date.now() + minutes * 60_000 });
+  if (minutes !== null) sleepTimeout = setTimeout(() => { audio?.pause(); yt?.pauseVideo(); stopPolling(); set({ paused: true, loading: false, sleepUntil: null }); }, minutes * 60_000);
+}
+export function setPlaybackSpeed(speed: number) { const value = Math.max(.5, Math.min(2, speed)); if (audio) audio.playbackRate = value; yt?.setPlaybackRate?.(value); set({ speed: value }); }
+export function clearMusicHistory() { set({ history: [] }); }
 export function setVolume(v: number) { ensure(); const volume = Math.max(0, Math.min(1, v)); if (audio) audio.volume = volume; yt?.setVolume(volume * 100); set({ volume }); }
 export function setPlayerPrefs(p: Prefs) { prefsRef = p; }
 export function toggleShuffle() { set({ shuffle: !state.shuffle }); }
@@ -93,6 +102,7 @@ export async function playList(list: Track[], i: number) {
   ensure(); const t = list[i]; if (!t || !audio) return;
   const my = ++playId; stopPolling(); audio.pause(); audio.removeAttribute("src"); yt?.stopVideo();
   set({ queue: list, cur: i, status: "Finding your song…", paused: true, loading: true, time: 0, dur: t.duration, mode: null, fallbackId: null });
+  audio.playbackRate = state.speed;
   const want = { q: `${t.artist} ${t.title}`, title: t.title, artist: t.artist, duration: String(t.duration || 0), preview: t.preview ?? "" };
   if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist, album: t.album, artwork: t.art ? [{ src: t.art }] : [] });
   if (state.server !== "youtube") {
@@ -112,7 +122,7 @@ export async function playList(list: Track[], i: number) {
     if (my !== playId) return;
     if (!player) { set({ loading: false, paused: true, fallbackId: first, status: "YouTube controls unavailable — open player" }); return; }
     candidates = result.ids; candidateIndex = 0; ytGeneration = my;
-    set({ mode: "video", status: "Starting YouTube…" }); player.loadVideoById(first); player.setVolume(state.volume * 100); player.playVideo();
+    set({ mode: "video", status: "Starting YouTube…" }); player.loadVideoById(first); player.setVolume(state.volume * 100); player.setPlaybackRate?.(state.speed); player.playVideo();
     setTimeout(() => { if (my === playId && state.loading) set({ loading: false, paused: true, fallbackId: first, status: "Press play in the YouTube player" }); }, 8000);
     const upcoming = list[i + 1]; if (upcoming) void musicApi({ op: "video", q: `${upcoming.artist} ${upcoming.title}`, title: upcoming.title, artist: upcoming.artist }).catch(() => {});
   } catch (e) { if (my === playId) set({ loading: false, paused: true, status: e instanceof Error ? e.message : "Song unavailable" }); }
