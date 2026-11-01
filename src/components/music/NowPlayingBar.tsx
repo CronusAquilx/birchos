@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { Download, ListMusic, Loader2, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume2, X } from "lucide-react";
-import { artUrl, downloadUrl, next, prev, seek, setPlayerPrefs, setVolume, stop, toggle, toggleRepeat, toggleShuffle, usePlayer } from "@/lib/music/player";
+import { useEffect, useRef, useState } from "react";
+import { Download, ListMusic, Loader2, Maximize2, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume2, X } from "lucide-react";
+import { artUrl, downloadUrl, getPlayer, next, prev, seek, setPlayerPrefs, setVolume, stop, toggle, toggleRepeat, toggleShuffle, usePlayer } from "@/lib/music/player";
 import { Button } from "@/components/ui/button";
 import { usePrefs } from "@/lib/astra/prefs";
 import { cn } from "@/lib/utils";
+import { FullscreenPlayer } from "./FullscreenPlayer";
 
 const fmt = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
 
@@ -12,8 +13,33 @@ const fmt = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String
 export function NowPlayingBar() {
   const p = usePlayer();
   const prefs = usePrefs();
+  const [full, setFull] = useState(false);
+  const lastVol = useRef(1);
   useEffect(() => { setPlayerPrefs(prefs); }, [prefs]);
   const t = p.cur >= 0 ? p.queue[p.cur] : undefined;
+  const muted = p.volume === 0;
+  const toggleMute = () => { const v = getPlayer().volume; if (v > 0) { lastVol.current = v; setVolume(0); } else setVolume(lastVol.current || 1); };
+  useEffect(() => {
+    if (!t) return;
+    const h = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable || e.altKey || e.metaKey) return;
+      const s = getPlayer();
+      if (e.code === "Space") { e.preventDefault(); toggle(); }
+      else if (e.ctrlKey && e.key === "ArrowRight") { e.preventDefault(); next(); }
+      else if (e.ctrlKey && e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+      else if (e.shiftKey && e.key === "ArrowRight") { e.preventDefault(); seek(s.time + 10); }
+      else if (e.shiftKey && e.key === "ArrowLeft") { e.preventDefault(); seek(Math.max(0, s.time - 10)); }
+      else if (e.ctrlKey) return;
+      else if (e.key === "m" || e.key === "M") toggleMute();
+      else if (e.key === "s" || e.key === "S") toggleShuffle();
+      else if (e.key === "r" || e.key === "R") toggleRepeat();
+      else if (e.key === "f" || e.key === "F") setFull(v => !v);
+      else if (e.key === "Escape") setFull(false);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [!!t]);
   if (!t) return null;
   const dur = p.dur || t.duration || 0;
   return (
@@ -38,9 +64,11 @@ export function NowPlayingBar() {
           </label>
         )}
         <a href={downloadUrl(t)} download className="hidden rounded-md p-2 hover:bg-accent sm:block" aria-label="Download song"><Download className="size-4" /></a>
+        <Button variant="ghost" size="icon" onClick={() => setFull(true)} aria-label="Full screen player" title="Full screen (F)"><Maximize2 className="size-4" /></Button>
         <Link to="/music" className="hidden rounded-md p-2 hover:bg-accent sm:block" aria-label="Open music"><ListMusic className="size-4" /></Link>
         <Button variant="ghost" size="icon" onClick={stop} aria-label="Stop"><X className="size-4" /></Button>
       </div>
+      {full && <FullscreenPlayer onClose={() => setFull(false)} onMute={toggleMute} muted={muted} />}
     </div>
   );
 }
