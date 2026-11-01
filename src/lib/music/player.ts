@@ -15,6 +15,8 @@ type State = { queue: Track[]; cur: number; status: string; paused: boolean; tim
 let state: State = { queue: [], cur: -1, status: "", paused: true, time: 0, dur: 0, server: "youtube", mode: null, volume: .7, shuffle: false, repeat: "off", loading: false, fallbackId: null, speed: 1, sleepUntil: null, history: [] };
 const subs = new Set<() => void>();
 const set = (p: Partial<State>) => { state = { ...state, ...p }; subs.forEach(f => f()); };
+let recordedPlay = -1;
+function recordPlayback() { const current = state.queue[state.cur]; if (!current || recordedPlay === playId) return; recordedPlay = playId; set({ history: [current, ...state.history].slice(0, 200) }); }
 let audio: HTMLAudioElement | null = null;
 let token = "";
 let playId = 0;
@@ -42,7 +44,7 @@ function ensure() {
   if (typeof document === "undefined" || audio) return;
   audio = new Audio(); audio.preload = "none"; audio.volume = state.volume;
   audio.addEventListener("timeupdate", () => { if (audio && state.mode === "audio") set({ time: audio.currentTime, dur: Number.isFinite(audio.duration) ? audio.duration : state.dur }); });
-  audio.addEventListener("play", () => { if (state.mode === "audio") set({ paused: false, loading: false }); });
+  audio.addEventListener("play", () => { if (state.mode === "audio") { recordPlayback(); set({ paused: false, loading: false }); } });
   audio.addEventListener("pause", () => { if (state.mode === "audio") set({ paused: true }); });
   audio.addEventListener("ended", () => next());
   audio.addEventListener("error", () => { if (state.mode === "audio") set({ paused: true, loading: false, status: "Audio unavailable — try YouTube" }); });
@@ -61,7 +63,7 @@ function youtubePlayer(): Promise<YTPlayer> {
         onReady: (event: { target: YTPlayer }) => { clearTimeout(timer); yt = event.target; yt.setVolume(state.volume * 100); resolve(yt); },
         onStateChange: (event: { data: number }) => {
           if (state.mode !== "video" || ytGeneration !== playId) return;
-          if (event.data === 1) { set({ paused: false, loading: false, status: "YouTube · may have ads" }); stopPolling(); poll = setInterval(() => { if (yt && state.mode === "video") set({ time: yt.getCurrentTime() || 0, dur: yt.getDuration() || state.dur }); }, 250); }
+          if (event.data === 1) { recordPlayback(); set({ paused: false, loading: false, status: "YouTube · may have ads" }); stopPolling(); poll = setInterval(() => { if (yt && state.mode === "video") set({ time: yt.getCurrentTime() || 0, dur: yt.getDuration() || state.dur }); }, 250); }
           else if (event.data === 2) { stopPolling(); set({ paused: true, loading: false }); }
           else if (event.data === 3) set({ loading: true });
           else if (event.data === 0) next();

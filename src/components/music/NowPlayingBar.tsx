@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, ListMusic, Loader2, Maximize2, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume2, X } from "lucide-react";
+import { Download, ListMusic, Loader2, Maximize2, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume2, X, Music2 } from "lucide-react";
 import { artUrl, downloadUrl, getPlayer, next, prev, seek, setPlayerPrefs, setVolume, stop, toggle, toggleRepeat, toggleShuffle, usePlayer } from "@/lib/music/player";
 import { Button } from "@/components/ui/button";
 import { usePrefs } from "@/lib/astra/prefs";
@@ -26,6 +26,8 @@ export function NowPlayingBar() {
       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable || e.altKey || e.metaKey) return;
       const s = getPlayer();
       if (e.code === "Space") { e.preventDefault(); toggle(); }
+      else if (e.ctrlKey && e.shiftKey && e.key === "ArrowRight") { e.preventDefault(); seek(s.time + 10); }
+      else if (e.ctrlKey && e.shiftKey && e.key === "ArrowLeft") { e.preventDefault(); seek(Math.max(0, s.time - 10)); }
       else if (e.ctrlKey && e.key === "ArrowRight") { e.preventDefault(); next(); }
       else if (e.ctrlKey && e.key === "ArrowLeft") { e.preventDefault(); prev(); }
       else if (e.shiftKey && e.key === "ArrowRight") { e.preventDefault(); seek(s.time + 10); }
@@ -40,7 +42,7 @@ export function NowPlayingBar() {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [!!t]);
-  if (!t) return null;
+  if (!t) return <div className="now-playing qaisify-playerbar shrink-0 border-t"><div className="flex items-center justify-between gap-4 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><Music2 className="size-8 text-primary"/><span className="truncate text-sm text-muted-foreground">Nothing playing</span></div><div className="flex items-center gap-3"><Button variant="ghost" size="icon" disabled aria-label="Previous"><SkipBack className="size-4"/></Button><Button size="icon" disabled aria-label="Play"><Play className="size-4"/></Button><Button variant="ghost" size="icon" disabled aria-label="Next"><SkipForward className="size-4"/></Button></div><Link to="/music" aria-label="Open music"><ListMusic className="size-4"/></Link></div></div>;
   const dur = p.dur || t.duration || 0;
   return (
     <div className="now-playing qaisify-playerbar shrink-0 border-t">
