@@ -211,7 +211,12 @@ async function handle({ request }: { request: Request }) {
 
   switch (url.searchParams.get("op")) {
     case "qaisify-home": {
-      const results = await Promise.all(QAISIFY_ROWS.map(async row => ({ ...row, tracks: (await appleSearch(row.term).catch(() => ({ results: [] }))).results.filter((x: any) => x.kind === "song").map(qaisifyTrack) })));
+      const results = await Promise.all(QAISIFY_ROWS.map(async row => ({ ...row, tracks: await (async () => {
+        const apple = (await appleSearch(row.term).catch(() => ({ results: [] }))).results.filter((x: any) => x.kind === "song").map(qaisifyTrack);
+        if (apple.length) return apple;
+        const d = await dz(`/search?q=${encodeURIComponent(row.term)}&limit=20`).catch(() => ({}));
+        return Array.isArray(d.data) ? d.data.map((x: any) => track(x)) : [];
+      })() })));
       return json({ rows: results }, 300);
     }
     case "qaisify-search": {

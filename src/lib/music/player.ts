@@ -71,7 +71,7 @@ function youtubePlayer(): Promise<YTPlayer> {
         onError: (event: { data: number }) => {
           if (state.mode !== "video" || ytGeneration !== playId) return;
           if (event.data !== 153 && candidates[candidateIndex + 1] && yt) { candidateIndex++; yt.loadVideoById(candidates[candidateIndex] ?? ""); set({ loading: true, status: "Trying another verified video…" }); }
-          else { stopPolling(); set({ loading: false, paused: true, mode: null, fallbackId: candidates[0] ?? null, status: "YouTube could not start here" }); }
+          else { stopPolling(); const t = state.queue[state.cur]; set({ mode: null, fallbackId: candidates[0] ?? null, status: "Video blocked — switching to audio…" }); if (t) void audioFallback(t, playId); }
         },
       } });
     };
@@ -128,6 +128,15 @@ export async function playList(list: Track[], i: number) {
     setTimeout(() => { if (my === playId && state.loading) set({ loading: false, paused: true, fallbackId: first, status: "Press play in the YouTube player" }); }, 8000);
     const upcoming = list[i + 1]; if (upcoming) void musicApi({ op: "video", q: `${upcoming.artist} ${upcoming.title}`, title: upcoming.title, artist: upcoming.artist }).catch(() => {});
   } catch (e) { if (my === playId) set({ loading: false, paused: true, status: e instanceof Error ? e.message : "Song unavailable" }); }
+}
+async function audioFallback(t: Track, my: number) {
+  ensure();
+  try {
+    const r = await musicApi<{ url: string | null; server?: string }>({ op: "resolve", server: "auto", q: `${t.artist} ${t.title}`, title: t.title, artist: t.artist, duration: String(t.duration || 0), preview: t.preview ?? "" });
+    if (my !== playId || !audio) return;
+    if (r.url) { audio.src = `/api/music?op=audio&u=${encodeURIComponent(r.url)}&token=${encodeURIComponent(token)}`; set({ mode: "audio", status: r.server ?? "Audio" }); await audio.play(); if (my === playId) set({ loading: false, paused: false }); return; }
+  } catch { /* fall through to proxy player */ }
+  if (my === playId) set({ loading: false, paused: true, status: "Open the proxied player to listen" });
 }
 export function toggle() { ensure(); if (state.mode === "audio" && audio?.src) { if (audio.paused) void audio.play().catch(() => set({ status: "Press play again", loading: false })); else audio.pause(); } else if (state.mode === "video" && yt) { if (state.paused) yt.playVideo(); else yt.pauseVideo(); } else if (state.cur >= 0) void playList(state.queue, state.cur); }
 export function next() { const index = nextQueueIndex(state.cur, state.queue.length, state.repeat, state.shuffle); if (index >= 0) void playList(state.queue, index); else { audio?.pause(); yt?.pauseVideo(); stopPolling(); set({ paused: true, loading: false }); } }
