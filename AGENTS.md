@@ -44,3 +44,4 @@
 - Movie voice search verifies tracks, retries once per source and respects manual playback; all animation can confirm MAL/AniList dub entries, while Anikoto opens its real search through the proxy, not a guessed embed API.
 - Switch composes existing routes. Desktop widgets use bounded Rnd geometry in appearance profiles, shared music/Open-Meteo and per-user local notes; guest notes stay in memory.
 - Wallpapers use owner-only backgrounds storage and per-layout prefs; guest images use temporary object URLs. Custom accents use shared CSS tokens.
+- Imported wallpaper catalogs use CDN asset pointers and shared settings; all shell backdrops use WallpaperMedia for silent visibility-aware video playback and per-layout poster/type persistence.
