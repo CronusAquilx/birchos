@@ -45,5 +45,6 @@
 - Switch composes existing routes. Desktop widgets use bounded Rnd geometry in appearance profiles, shared music/Open-Meteo and per-user local notes; guest notes stay in memory.
 - Wallpapers use owner-only backgrounds storage and per-layout prefs; guest images use temporary object URLs. Custom accents use shared CSS tokens.
 - Imported wallpaper catalogs use CDN asset pointers and shared settings; all shell backdrops use WallpaperMedia for silent visibility-aware video playback and per-layout poster/type persistence.
+- Wallpaper catalogs use uncompressed original downloads with probed native dimensions; a shared URL-upgrade map upgrades previously saved preview selections without changing custom uploads or layout preferences.
 - Explicit wallpaper playback choices are per-layout overrides of motion/performance limits for that video only; hidden tabs still pause, and other effects retain accessibility settings.
 - Music-bar visibility uses shared preferences and never changes player state, so hiding or restoring it works across shells without interrupting songs.

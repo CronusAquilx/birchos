@@ -1,8 +1,8 @@
 # Birchbeat import roadmap
 
 ## Current request — original-quality wallpapers
-- [ ] Replace preview loops with verified original-resolution videos and update existing selections.
-- [ ] Verify actual video dimensions and playback with limited checks.
+- [x] Replace all 294 preview loops with original downloads: 186 native 4K-or-higher, 107 other HD originals, one native 720p; upgrade saved preview URLs automatically.
+- [x] Probe imported video dimensions, pass 12 focused tests, and verify equipped Dreamy Landscape plays at 1920px rather than 480px.
 
 ## Current request — hide music bar and repair live playback
 - [x] Add a persistent music-bar hide option with a way to restore it, without stopping songs.
