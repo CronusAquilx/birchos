@@ -135,7 +135,7 @@ let proxyFrame: HTMLIFrameElement | null = null;
 function clearProxy() { proxyFrame?.remove(); proxyFrame = null; if (typeof document !== "undefined") document.querySelectorAll<HTMLElement>(".qaisify-playback-host").forEach(el => { el.style.visibility = ""; }); }
 async function proxyOrAudio(t: Track, my: number) {
   const id = candidates[0];
-  if (prefsRef && id && typeof document !== "undefined") {
+  if (false && prefsRef && id && typeof document !== "undefined") {
     try {
       clearProxy(); yt?.stopVideo(); const ytHost = document.querySelector<HTMLElement>(".qaisify-playback-host"); if (ytHost) ytHost.style.visibility = "hidden";
       const f = document.createElement("iframe"); f.className = "qaisify-playback-host"; f.allow = "autoplay; encrypted-media"; f.style.cssText = "position:fixed;width:320px;height:180px;right:12px;bottom:90px;border:0;border-radius:10px;z-index:2147483000;background:#000";
