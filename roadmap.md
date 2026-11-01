@@ -1,5 +1,9 @@
 # Birchbeat import roadmap
 
+## Current request — maximum wallpaper sharpness
+- [ ] Check for frame-rate caps and blurred/scaled video rendering; repair legacy preview URL resolution.
+- [ ] Verify native 4K playback and explain source-resolution limits without claiming artificial quality gains.
+
 ## Current request — original-quality wallpapers
 - [x] Replace all 294 preview loops with original downloads: 186 native 4K-or-higher, 107 other HD originals, one native 720p; upgrade saved preview URLs automatically.
 - [x] Probe imported video dimensions, pass 12 focused tests, and verify equipped Dreamy Landscape plays at 1920px rather than 480px.
