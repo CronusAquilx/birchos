@@ -1,5 +1,9 @@
 # Birchbeat import roadmap
 
+## Current request — original-quality wallpapers
+- [ ] Replace preview loops with verified original-resolution videos and update existing selections.
+- [ ] Verify actual video dimensions and playback with limited checks.
+
 ## Current request — hide music bar and repair live playback
 - [x] Add a persistent music-bar hide option with a way to restore it, without stopping songs.
 - [x] Repair catalog video playback with an independent animation switch; 20 focused tests pass and guest UI hide/restore, animation playback under OS reduced motion and pause/resume verified.
