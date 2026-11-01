@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { usePrefs } from "@/lib/astra/prefs";
-import { openProxied } from "@/lib/astra/proxy";
+import { keepProxyAlive, openProxied } from "@/lib/astra/proxy";
 import { attachProxiedPopups } from "@/lib/astra/proxy-popups";
 import { discoverVoiceTracks, voiceLabel, type VoiceTrack } from "@/lib/movies/audio-tracks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,7 +53,8 @@ export function ProxiedPlayer({ src, title, onLoad, onError, anime = false, voic
     iframe.addEventListener("load", loaded);
     const detach = attachProxiedPopups(iframe, src, prefs);
     openProxied(iframe, src, prefs).catch(() => errRef.current?.());
-    return () => { iframe.removeEventListener("load", loaded); detach(); };
+    const stopKeepAlive = keepProxyAlive(prefs);
+    return () => { stopKeepAlive(); iframe.removeEventListener("load", loaded); detach(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, prefs.transport, prefs.wisp]);
   const active = tracks.find(track => track.active)?.id;
