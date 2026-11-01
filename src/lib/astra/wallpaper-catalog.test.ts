@@ -10,6 +10,11 @@ describe("shared live wallpaper catalog", () => {
     expect(upgradeWallpaperSource("/loop.mp4", upgrades)).toBe("/original-4k.mp4");
     expect(upgradeWallpaperSource("/custom.mp4", upgrades)).toBe("/custom.mp4");
   });
+  it("upgrades absolute saved asset URLs and cache-busted preview URLs", () => {
+    const upgrades = { "/__l5e/assets-v1/old/preview.mp4": "/original-4k.mp4" };
+    expect(upgradeWallpaperSource("https://example.org/__l5e/assets-v1/old/preview.mp4?v=1", upgrades)).toBe("/original-4k.mp4");
+    expect(upgradeWallpaperSource("/__l5e/assets-v1/old/preview.mp4?v=1", upgrades)).toBe("/original-4k.mp4");
+  });
   it.each(VISIBLE_LAYOUTS)("applies a video to %s without changing another layout", layout => {
     const current = initialAppearance(DEFAULT_PREFS);
     const saved = updateAppearance({ classic: current }, layout, current, wallpaperPatch(layout, item));

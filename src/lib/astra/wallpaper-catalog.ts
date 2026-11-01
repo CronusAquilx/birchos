@@ -11,7 +11,11 @@ export type CatalogWallpaper = {
 };
 
 export function upgradeWallpaperSource(src: string, upgrades: Record<string, string>): string {
-  return upgrades[src] ?? src;
+  if (upgrades[src]) return upgrades[src];
+  try {
+    const path = new URL(src, "https://wallpaper.local").pathname;
+    return upgrades[path] ?? src;
+  } catch { return src; }
 }
 
 export function wallpaperPatch(layout: AppearanceLayout, item: CatalogWallpaper): Partial<AppearanceProfile> {
