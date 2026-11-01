@@ -125,7 +125,8 @@ export async function playList(list: Track[], i: number) {
     if (!player) { set({ loading: false, paused: true, fallbackId: first, status: "YouTube controls unavailable — open player" }); return; }
     candidates = result.ids; candidateIndex = 0; ytGeneration = my;
     set({ mode: "video", status: "Starting YouTube…" }); player.loadVideoById(first); player.setVolume(state.volume * 100); player.setPlaybackRate?.(state.speed); player.playVideo();
-    setTimeout(() => { if (my === playId && state.loading) set({ loading: false, paused: true, fallbackId: first, status: "Press play in the YouTube player" }); }, 8000);
+    const watchdog = (index: number) => setTimeout(() => { if (my !== playId || !state.loading || candidateIndex !== index) return; const nextId = candidates[index + 1]; if (nextId && yt) { candidateIndex = index + 1; yt.loadVideoById(nextId); set({ status: "Trying another video…" }); watchdog(index + 1); } else void audioFallback(t, my); }, 7000);
+    watchdog(0);
     const upcoming = list[i + 1]; if (upcoming) void musicApi({ op: "video", q: `${upcoming.artist} ${upcoming.title}`, title: upcoming.title, artist: upcoming.artist }).catch(() => {});
   } catch (e) { if (my === playId) set({ loading: false, paused: true, status: e instanceof Error ? e.message : "Song unavailable" }); }
 }

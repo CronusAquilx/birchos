@@ -362,7 +362,7 @@ async function handle({ request }: { request: Request }) {
       const want: Want = { title: url.searchParams.get("title") ?? "", artist: url.searchParams.get("artist") ?? "", duration: 0 };
       const items = (d.items ?? []).filter((i: any) => typeof i?.id?.videoId === "string" && /^[\w-]{11}$/.test(i.id.videoId));
       const ranked = want.title
-        ? items.map((i: any, n: number) => ({ i, s: matchScore(i.snippet?.title ?? "", i.snippet?.channelTitle ?? "", 0, want) + (/official (audio|video)|topic$/i.test(`${i.snippet?.title} ${i.snippet?.channelTitle}`) ? 3 : 0) - n * 0.3 })).filter((x: any) => x.s >= 5).sort((a: any, b: any) => b.s - a.s).map((x: any) => x.i)
+        ? items.map((i: any, n: number) => ({ i, s: matchScore(i.snippet?.title ?? "", i.snippet?.channelTitle ?? "", 0, want) + (/lyrics?|official (audio|video)/i.test(i.snippet?.title ?? "") ? 2 : 0) - (/( - topic|vevo)$/i.test(i.snippet?.channelTitle ?? "") ? 4 : 0) - n * 0.3 })).filter((x: any) => x.s >= 5).sort((a: any, b: any) => b.s - a.s).map((x: any) => x.i)
         : items;
       const rawIds = ranked.map((i: any) => i.id.videoId).slice(0, 10);
       if (!rawIds.length) return json({ ids: [] }, 0);
