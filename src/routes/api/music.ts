@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { authenticateRequest } from "@/lib/astra/api-user.server";
 import { playableVideoIds, QAISIFY_ROWS, qaisifyTrack } from "@/lib/music/qaisify";
+import { catalogSearch } from "@/lib/music/catalog";
 
 /** Music relay: Deezer catalog (songs, albums, artists), artwork, lyrics and YouTube lookups load through Astra's server. */
 const DZ = "https://api.deezer.com";
@@ -9,8 +10,9 @@ const catalogCache = new Map<string, { at: number; data: any }>();
 async function itunes(path: string): Promise<any> {
   const cached = catalogCache.get(path);
   if (cached && Date.now() - cached.at < 300_000) return cached.data;
-  const r = await fetch(`https://itunes.apple.com${path}`, { signal: AbortSignal.timeout(8000) });
-  if (!r.ok) throw new Error("Song catalog unavailable — please try again");
+  let r = await fetch(`https://itunes.apple.com${path}`, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+  if (!r?.ok) r = await fetch(`https://itunes.apple.com${path}`, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+  if (!r?.ok) throw new Error("Song catalog unavailable — please try again");
   const data = await r.json();
   catalogCache.set(path, { at: Date.now(), data });
   if (catalogCache.size > 200) { const first = catalogCache.keys().next().value; if (first) catalogCache.delete(first); }
@@ -214,8 +216,18 @@ async function handle({ request }: { request: Request }) {
     }
     case "qaisify-search": {
       const raw = (url.searchParams.get("q") ?? "").slice(0, 200);
-      const [songs, albums, artists] = await Promise.all([appleSearch(raw, "song", 30), appleSearch(raw, "album", 12), appleSearch(raw, "musicArtist", 8)]);
-      return json({ tracks: songs.results.filter((x: any) => x.kind === "song").map(qaisifyTrack), albums: albums.results.map(appleAlbum), artists: artists.results.map(appleArtist) });
+      try {
+        return json(await catalogSearch(
+          async () => (await appleSearch(raw, "song", 30)).results.filter((x: any) => x.kind === "song").map(qaisifyTrack),
+          async () => (await appleSearch(raw, "album", 12)).results.map(appleAlbum),
+          async () => (await appleSearch(raw, "musicArtist", 8)).results.map(appleArtist),
+          async () => {
+            const d = await dz(`/search?q=${q}&limit=30`);
+            if (!Array.isArray(d.data)) throw new Error("Song catalog unavailable");
+            return d.data.map((x: any) => track(x));
+          },
+        ));
+      } catch { return Response.json({ error: "Song catalogs are temporarily unavailable. Try again." }, { status: 503 }); }
     }
     case "home": {
       const d = await dz("/chart/0?limit=30");

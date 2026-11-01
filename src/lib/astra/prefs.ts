@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { activeLayout, initialAppearance, updateAppearance, type AppearanceLayout, type AppearanceProfile, type AppearanceProfiles } from "./appearance";
 
 export type Prefs = {
+  musicTheme: string;
   appearances: AppearanceProfiles;
   layout: "classic" | "launcher" | "windows" | "switch";
   console: "off" | "sony" | "series" | "classic" | "wii" | "neutral";
@@ -42,6 +43,7 @@ export type Prefs = {
 };
 
 export const DEFAULT_PREFS: Prefs = {
+  musicTheme: "midnight-void",
   appearances: {},
   layout: "windows",
   console: "off",
