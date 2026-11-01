@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { setPrefs, setAppearance, resetPrefs } from "./prefs";
 
 describe("persisted appearance switching", () => {
+  it("retains music-bar visibility across layout changes", () => {
+    resetPrefs(); setPrefs({ musicBarHidden: true }); setPrefs({ console: "sony" });
+    expect(JSON.parse(localStorage.getItem("astra-prefs") || "{}").musicBarHidden).toBe(true);
+    setPrefs({ musicBarHidden: false });
+    expect(JSON.parse(localStorage.getItem("astra-prefs") || "{}").musicBarHidden).toBe(false);
+  });
   it("restores Wii and Neutral appearances independently", () => {
     resetPrefs(); setPrefs({ console: "wii" });
     setAppearance("wii", { customAccent: "#12abcd", consoleCustomBg: "https://example.org/wii.jpg", consoleBg: "custom" });

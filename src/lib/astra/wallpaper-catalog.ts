@@ -10,7 +10,7 @@ export type CatalogWallpaper = {
 };
 
 export function wallpaperPatch(layout: AppearanceLayout, item: CatalogWallpaper): Partial<AppearanceProfile> {
-  const media = { wallpaperType: "video" as const, wallpaperPoster: item.image, artwork: true };
+  const media = { wallpaperType: "video" as const, wallpaperPoster: item.image, wallpaperPlayback: true, artwork: true };
   return ["sony", "series", "wii", "neutral"].includes(layout)
     ? { ...media, consoleCustomBg: item.video, consoleBg: "custom" }
     : { ...media, customBg: item.video };

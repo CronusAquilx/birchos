@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, ListMusic, Loader2, Maximize2, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume2, X, Music2 } from "lucide-react";
+import { Download, ListMusic, Loader2, Maximize2, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Volume2, X, Music2, EyeOff } from "lucide-react";
 import { artUrl, downloadUrl, getPlayer, next, prev, seek, setPlayerPrefs, setVolume, stop, toggle, toggleRepeat, toggleShuffle, usePlayer } from "@/lib/music/player";
 import { Button } from "@/components/ui/button";
-import { usePrefs } from "@/lib/astra/prefs";
+import { setPrefs, usePrefs } from "@/lib/astra/prefs";
 import { cn } from "@/lib/utils";
 import { FullscreenPlayer } from "./FullscreenPlayer";
 
@@ -42,7 +42,9 @@ export function NowPlayingBar() {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [!!t]);
-  if (!t) return <div className="now-playing qaisify-playerbar shrink-0 border-t"><div className="flex items-center justify-between gap-4 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><Music2 className="size-8 text-primary"/><span className="truncate text-sm text-muted-foreground">Nothing playing</span></div><div className="flex items-center gap-3"><Button variant="ghost" size="icon" disabled aria-label="Previous"><SkipBack className="size-4"/></Button><Button size="icon" disabled aria-label="Play"><Play className="size-4"/></Button><Button variant="ghost" size="icon" disabled aria-label="Next"><SkipForward className="size-4"/></Button></div><Link to="/music" aria-label="Open music"><ListMusic className="size-4"/></Link></div></div>;
+  if (prefs.musicBarHidden) return <><Button variant="secondary" size="icon" className="fixed bottom-16 right-3 z-[320] shadow-md" aria-label="Show music bar" title="Show music bar" onClick={() => setPrefs({ musicBarHidden: false })}><Music2 className="size-4"/></Button>{full && t && <FullscreenPlayer onClose={() => setFull(false)} onMute={toggleMute} muted={muted}/>}</>;
+  const hideBar = <Button variant="ghost" size="icon" aria-label="Hide music bar" title="Hide music bar" onClick={() => setPrefs({ musicBarHidden: true })}><EyeOff className="size-4"/></Button>;
+  if (!t) return <div className="now-playing qaisify-playerbar shrink-0 border-t"><div className="flex items-center justify-between gap-2 px-3 py-2"><div className="flex min-w-0 items-center gap-3"><Music2 className="size-8 shrink-0 text-primary"/><span className="truncate text-sm text-muted-foreground">Nothing playing</span></div><div className="flex shrink-0 items-center gap-1"><Button variant="ghost" size="icon" disabled aria-label="Previous"><SkipBack className="size-4"/></Button><Button size="icon" disabled aria-label="Play"><Play className="size-4"/></Button><Button variant="ghost" size="icon" disabled aria-label="Next"><SkipForward className="size-4"/></Button><Link to="/music" aria-label="Open music"><ListMusic className="size-4"/></Link>{hideBar}</div></div></div>;
   const dur = p.dur || t.duration || 0;
   return (
     <div className="now-playing qaisify-playerbar shrink-0 border-t">
@@ -69,6 +71,7 @@ export function NowPlayingBar() {
         <Button variant="ghost" size="icon" onClick={() => setFull(true)} aria-label="Full screen player" title="Full screen (F)"><Maximize2 className="size-4" /></Button>
         <Link to="/music" className="hidden rounded-md p-2 hover:bg-accent sm:block" aria-label="Open music"><ListMusic className="size-4" /></Link>
         <Button variant="ghost" size="icon" onClick={stop} aria-label="Stop"><X className="size-4" /></Button>
+        {hideBar}
       </div>
       {full && <FullscreenPlayer onClose={() => setFull(false)} onMute={toggleMute} muted={muted} />}
     </div>

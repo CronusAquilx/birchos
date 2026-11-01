@@ -3,6 +3,7 @@ import { activeLayout, initialAppearance, updateAppearance, type AppearanceLayou
 
 export type Prefs = {
   musicTheme: string;
+  musicBarHidden: boolean;
   appearances: AppearanceProfiles;
   layout: "classic" | "launcher" | "windows" | "switch";
   console: "off" | "sony" | "series" | "classic" | "wii" | "neutral";
@@ -44,6 +45,7 @@ export type Prefs = {
 
 export const DEFAULT_PREFS: Prefs = {
   musicTheme: "midnight-void",
+  musicBarHidden: false,
   appearances: {},
   layout: "windows",
   console: "off",

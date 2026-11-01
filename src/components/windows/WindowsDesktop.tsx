@@ -115,7 +115,7 @@ export function WindowsDesktop({ children, desktopOnly = false }: { children?: R
     }
   };
   return <div data-full-window={fullWindow} className="windows-desktop fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
-    {look.artwork && <WallpaperMedia src={look.customBg || wallpaper} type={look.wallpaperType} poster={look.wallpaperPoster} reduceMotion={look.reduceMotion} className="windows-wallpaper absolute inset-0 size-full object-cover"/>}
+    {look.artwork && <WallpaperMedia src={look.customBg || wallpaper} type={look.wallpaperType} poster={look.wallpaperPoster} playback={look.wallpaperPlayback} reduceMotion={look.reduceMotion} className="windows-wallpaper absolute inset-0 size-full object-cover"/>}
     <WallpaperEffects/>
     <DesktopStatusBar onApps={() => { setStart(!start); setQuick(false); }} onSettings={() => { setQuick(!quick); setStart(false); }}/>
     <div ref={workspace} className="windows-workspace relative min-h-0 flex-1" onPointerDown={e => { if (e.target === e.currentTarget) { setStart(false); setQuick(false); setTasks(false); } }}>
