@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Download, ListPlus, Loader2, Mic2, Music2, Play, Plus, Search, Sparkles, Trash2, Wand2, Home, Library, Disc3 } from "lucide-react";
+import { ArrowLeft, Check, Download, ListPlus, Loader2, Mic2, Music2, Play, Plus, Search, Sparkles, Trash2, Wand2, Home, Library, Disc3, Settings, BarChart3, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePrefs } from "@/lib/astra/prefs";
 import { supabase } from "@/integrations/supabase/client";
 import { MobileMenuButton } from "@/components/astra/AppShell";
 import { RoomButton } from "@/components/RoomButton";
 import { getRoom, myRoomId, setRoomState, useRoom } from "@/lib/rooms";
-import { artUrl, downloadUrl, getAudio, musicApi, musicToken, playList, SERVERS, setServer, usePlayer, type Server, type Track } from "@/lib/music/player";
+import { addToQueue, removeFromQueue, artUrl, downloadUrl, getAudio, musicApi, musicToken, playList, SERVERS, setServer, usePlayer, type Server, type Track } from "@/lib/music/player";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { QAISIFY_ROWS } from "@/lib/music/qaisify";
+import { MusicSettings } from "@/components/music/MusicSettings";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -36,7 +37,11 @@ export function MusicView() {
   const [shelves, setShelves] = useState<{title: string; tracks: Track[]}[]>([]);
   const [queueOpen, setQueueOpen] = useState(false);
   const native = true;
-  const [section, setSection] = useState<"home" | "library" | "browse">("home");
+  const [collapsed, setCollapsed] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const requestVersion = useRef(0);
+  const retryLoad = useRef<(() => Promise<View>) | null>(null);
+  const [section, setSection] = useState<"home" | "library" | "browse" | "settings" | "stats" | "liked">("home");
   const player = usePlayer();
   const [q, setQ] = useState("");
   const [view, setView] = useState<View | null>(null);
@@ -56,12 +61,14 @@ export function MusicView() {
   const track = player.cur >= 0 ? player.queue[player.cur] : undefined;
 
   async function go(load: () => Promise<View>, push = true) {
+    const version = ++requestVersion.current; retryLoad.current = load;
     setLoading(true); setError("");
     try {
       const nextView = await load();
+      if (version !== requestVersion.current) return;
       if (push && view) setStack((s) => [...s, view]);
       setView(nextView);
-    } catch (e) { setError(e instanceof Error ? e.message : "Couldn't load music"); }
+    } catch (e) { if (version !== requestVersion.current) return; setError(e instanceof Error ? e.message : "Couldn't load music"); }
     setLoading(false);
   }
   const push = (v: View) => { if (view) setStack((s) => [...s, view]); setView(v); };
@@ -72,9 +79,16 @@ export function MusicView() {
     setMine((data ?? []).map((r) => ({ ...r, tracks: (r.tracks as unknown as Track[]) ?? [] })));
   }
 
+  async function loadHome() {
+    await go(async () => {
+      const result = await musicApi<{rows: {title: string; tracks: Track[]}[]}>({op: "qaisify-home"});
+      setShelves(result.rows);
+      return {kind: "home", title: "Qaisify", tracks: [], albums: [], artists: []};
+    }, false);
+  }
   useEffect(() => {
     void musicToken().then(() => force((x) => x + 1));
-    void musicApi<{rows: {title: string; tracks: Track[]}[]}>({ op: "qaisify-home" }).then(r => { setShelves(r.rows); setView({kind: "home", title: "Qaisify", tracks: [], albums: [], artists: []}); setLoading(false); }).catch(e => { setError(e.message); setLoading(false); });
+    void loadHome();
     setGenres(QAISIFY_ROWS.map((r, i) => ({id: String(i), name: r.title, art: ""})));
 
     void loadMine();
@@ -84,8 +98,24 @@ export function MusicView() {
   const search = (e: React.FormEvent) => {
     e.preventDefault();
     const term = q.trim();
+    setSection("browse");
     if (term) go(async () => ({ kind: "search", title: `Results for "${term}"`, ...(await musicApi<any>({ op: "qaisify-search", q: term })) }));
   };
+  useEffect(() => {
+    if (section !== "browse" || !q.trim()) return;
+    const timer = setTimeout(() => void go(async () => ({kind: "search", title: `Results for "${q.trim()}"`, ...(await musicApi<any>({op: "qaisify-search", q: q.trim()}))}), false), 400);
+    return () => clearTimeout(timer);
+  }, [q, section]);
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (!event.ctrlKey) return;
+      if (event.key.toLowerCase() === "f") { event.preventDefault(); setSection("browse"); searchRef.current?.focus(); }
+      if (event.shiftKey && event.key.toLowerCase() === "q") { event.preventDefault(); setQueueOpen(v => !v); }
+      if (event.shiftKey && event.key.toLowerCase() === "l") { event.preventDefault(); setLyricsOpen(v => !v); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   const openAlbum = (id: string) => go(async () => ({ kind: "album", data: await musicApi<any>({ op: "album", id }) }));
   const openArtist = (id: string) => go(async () => ({ kind: "artist", data: await musicApi<any>({ op: "artist", id }) }));
   const openGenre = (g: Genre) => go(async () => ({ kind: "genre", title: g.name, ...(await musicApi<any>({ op: "qaisify-search", q: QAISIFY_ROWS[Number(g.id)]?.term ?? g.name })) }));
@@ -127,6 +157,12 @@ export function MusicView() {
   async function saveTracks(id: string, tracks: Track[]) {
     await supabase.from("playlists").update({ tracks: tracks as never, updated_at: new Date().toISOString() }).eq("id", id);
     await loadMine();
+  }
+  const liked = mine.find(p => p.name === "Liked Songs");
+  async function toggleLike(t: Track) {
+    if (!user) { toast("Sign in to save liked songs"); return; }
+    if (!liked) { await createPlaylist("Liked Songs", [t]); return; }
+    await saveTracks(liked.id, liked.tracks.some(x => x.id === t.id) ? liked.tracks.filter(x => x.id !== t.id) : [...liked.tracks, t]);
   }
   async function addTo(pl: Mine, t: Track) {
     if (pl.tracks.some((x) => x.id === t.id)) { toast("Already in " + pl.name); return; }
@@ -186,6 +222,7 @@ export function MusicView() {
       <DropdownMenuTrigger className="rounded-md p-1.5 text-muted-foreground opacity-70 hover:bg-accent hover:opacity-100" aria-label="Add to playlist"><ListPlus className="size-4" /></DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Add to playlist</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => addToQueue(t)}>Add to queue</DropdownMenuItem>
         {mine.map((p) => <DropdownMenuItem key={p.id} onClick={() => addTo(p, t)}>{p.name}{p.tracks.some((x) => x.id === t.id) && <Check className="ml-auto size-3.5" />}</DropdownMenuItem>)}
         {mine.length > 0 && <DropdownMenuSeparator />}
         <DropdownMenuItem onClick={() => newPlaylistPrompt(t)}><Plus className="size-3.5" /> New playlist</DropdownMenuItem>
@@ -216,6 +253,7 @@ export function MusicView() {
             </div>
             <span className="hidden text-xs tabular-nums text-muted-foreground sm:inline">{t.duration ? fmt(t.duration) : ""}</span>
             <AddMenu t={t} />
+            <Button variant="ghost" size="icon" aria-label={`Like ${t.title}`} aria-pressed={liked?.tracks.some(x => x.id === t.id) ?? false} onClick={() => void toggleLike(t)}><Heart className={cn("size-4", liked?.tracks.some(x => x.id === t.id) && "fill-current text-primary")}/></Button>
             {onRemove && <button onClick={() => onRemove(i)} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent" aria-label="Remove"><Trash2 className="size-4" /></button>}
           </li>
         );
@@ -224,14 +262,14 @@ export function MusicView() {
     </ol>
   );
   const Card = ({ art, title, sub, onClick, round }: { art: string; title: string; sub?: string | undefined; onClick: () => void; round?: boolean }) => (
-    <button onClick={onClick} className="music-card group w-36 shrink-0 text-left sm:w-40">
+    <Button variant="ghost" onClick={onClick} className="music-card group block h-auto w-36 shrink-0 whitespace-normal text-left sm:w-40">
       <div className={cn("relative aspect-square overflow-hidden bg-muted shadow-md", round ? "rounded-full" : "rounded-xl")}>
         {art ? <img src={artUrl(art)} alt="" loading="lazy" className="size-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="music-gradient grid size-full place-items-center"><Music2 className="size-8 opacity-70" /></div>}
         {!round && <span className="absolute bottom-2 right-2 grid size-9 translate-y-2 place-items-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-lg transition group-hover:translate-y-0 group-hover:opacity-100"><Play className="size-4" /></span>}
       </div>
       <div className={cn("mt-2 truncate text-sm font-medium", round && "text-center")}>{title}</div>
       {sub && <div className={cn("truncate text-xs text-muted-foreground", round && "text-center")}>{sub}</div>}
-    </button>
+    </Button>
   );
   const Row = ({ children }: { children: React.ReactNode }) => <div className="mt-3 flex gap-4 overflow-x-auto pb-3">{children}</div>;
   const H = ({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) => <div className="mt-9 flex items-end justify-between"><h2 className="font-display text-2xl">{children}</h2>{action}</div>;
@@ -257,16 +295,19 @@ export function MusicView() {
   const mineView = view?.kind === "mine" ? mine.find((m) => m.id === view.id) : undefined;
 
   return (
-    <div className={cn("music-application qaisify-application flex h-full flex-col", native && "has-native-navigation")}>
+    <div data-music-theme={prefs.musicTheme} className={cn("music-application qaisify-application flex h-full flex-col", native && "has-native-navigation", collapsed && "qaisify-collapsed")}>
       {native && <aside className="music-library-rail">
         <div className="native-app-wordmark"><Disc3/><span>Qaisify</span></div>
         <nav aria-label="Music navigation">
-          <Button variant="ghost" aria-pressed={section === "home"} onClick={() => { setSection("home"); setView({ kind: "home", title: "Qaisify", tracks: [], albums: [], artists: [] }); }}><Home/>Home</Button>
-          <Button variant="ghost" aria-pressed={section === "browse"} onClick={() => { setSection("browse"); setView({ kind: "home", title: "Browse", tracks: [], albums: [], artists: [] }); }}><Search/>Search</Button>
-          <Button variant="ghost" aria-pressed={section === "library"} onClick={() => setSection("library")}><Library/>Your library</Button>
+          <Button variant="ghost" aria-pressed={section === "home"} onClick={() => { setSection("home"); setView({ kind: "home", title: "Qaisify", tracks: [], albums: [], artists: [] }); }}><Home/><span>Home</span></Button>
+          <Button variant="ghost" aria-pressed={section === "browse"} onClick={() => { setSection("browse"); setView({ kind: "home", title: "Browse", tracks: [], albums: [], artists: [] }); }}><Search/><span>Search</span></Button>
+          <Button variant="ghost" aria-pressed={section === "library"} onClick={() => setSection("library")}><Library/><span>Library</span></Button>
+          <Button variant="ghost" aria-pressed={section === "stats"} title="Stats" onClick={() => setSection("stats")}><BarChart3/><span>Stats</span></Button>
+          <Button variant="ghost" aria-pressed={section === "settings"} title="Settings" onClick={() => setSection("settings")}><Settings/><span>Settings</span></Button>
         </nav>
-        <div className="music-library-label"><span>PLAYLISTS</span><Button variant="ghost" size="icon" aria-label="Create playlist" title="Create playlist" onClick={() => void newPlaylistPrompt()}><Plus/></Button></div>
-        <div className="music-saved-playlists">{mine.map(p => <Button key={p.id} variant="ghost" onClick={() => { setSection("home"); push({ kind: "mine", id: p.id }); }}><Music2/><span className="truncate">{p.name}</span></Button>)}</div>
+        <div className="qaisify-library-box"><div className="music-library-label"><span>YOUR LIBRARY</span><Button variant="ghost" size="icon" aria-label="Create playlist" title="Create playlist" onClick={() => void newPlaylistPrompt()}><Plus/></Button></div>
+        <div className="music-saved-playlists"><Button variant="ghost" title="Liked Songs" onClick={() => setSection("liked")}><Heart className="text-primary"/><span>Liked Songs</span></Button>{mine.filter(p => p.id !== liked?.id).map(p => <Button key={p.id} variant="ghost" onClick={() => { setSection("home"); push({ kind: "mine", id: p.id }); }}><Music2/><span className="truncate">{p.name}</span></Button>)}</div>
+        </div><Button variant="ghost" size="icon" aria-label="Collapse sidebar" onClick={() => setCollapsed(v => !v)}>{collapsed ? <ChevronRight/> : <ChevronLeft/>}</Button>
         <div className="music-rail-current">{track?.art && <img src={artUrl(track.art)} alt=""/>}<p>{track?.title ?? "Nothing playing"}</p><span>{track?.artist ?? "Birch Music"}</span></div>
       </aside>}
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
@@ -274,7 +315,7 @@ export function MusicView() {
         {stack.length > 0 && <button onClick={back} className="rounded-md p-1.5 hover:bg-accent" aria-label="Back"><ArrowLeft className="size-4" /></button>}
         <form onSubmit={search} className="flex flex-1 items-center gap-2 rounded-full border bg-card px-3 py-1.5">
           <Search className="size-4 text-muted-foreground" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search songs, albums, artists" className="w-full bg-transparent text-sm outline-none" />
+          <input ref={searchRef} value={q} onChange={(e) => { setQ(e.target.value); setSection("browse"); }} aria-label="Search music" placeholder="What do you want to listen to?" className="w-full bg-transparent text-sm outline-none" />
         </form>
         {track && <button onClick={toggleLyrics} className={cn("rounded-md p-2 hover:bg-accent", lyricsOpen && "bg-accent")} aria-label="Lyrics"><Mic2 className="size-4" /></button>}
         <Button variant="ghost" size="icon" aria-label="Queue" title="Queue" onClick={() => setQueueOpen(v => !v)}><ListPlus className="size-4"/></Button>
@@ -285,10 +326,10 @@ export function MusicView() {
       </header>
 
       <div className="music-main-scroll flex-1 overflow-y-auto">
-        {queueOpen && <section className="qaisify-queue"><H>Queue</H><Tracks list={player.queue} /></section>}
+        {queueOpen && <section className="qaisify-queue"><H>Queue</H><Tracks list={player.queue} onRemove={removeFromQueue} /></section>}
         <div className="music-main-inner mx-auto max-w-6xl px-4 py-6">
-          {native && section === "library" ? <section><h1 className="text-3xl font-semibold">Your library</h1><div className="mt-5 flex items-center justify-between"><span className="text-sm text-muted-foreground">{mine.length} playlists</span><Button variant="secondary" onClick={() => void newPlaylistPrompt()}><Plus/>New playlist</Button></div><div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-5">{mine.map(p => <Card key={p.id} art={p.tracks[0]?.art ?? ""} title={p.name} sub={`${p.tracks.length} songs`} onClick={() => { setSection("home"); push({ kind: "mine", id: p.id }); }}/>)}</div>{!mine.length && <p className="mt-8 text-sm text-muted-foreground">No saved playlists.</p>}</section> : <>
-          {error && <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm">{error} <button onClick={() => location.reload()} className="ml-2 underline">Retry</button></div>}
+          {section === "settings" ? <MusicSettings onRefresh={() => {setSection("home"); void loadHome();}}/> : section === "stats" ? <section><h1 className="text-3xl font-semibold">Listening stats</h1><p className="mt-4 text-muted-foreground">{player.history.length} songs played this session</p><Tracks list={player.history}/></section> : section === "liked" ? <section><h1 className="text-3xl font-semibold">Liked Songs</h1><Tracks list={liked?.tracks ?? []}/></section> : native && section === "library" ? <section><h1 className="text-3xl font-semibold">Your library</h1><div className="mt-5 flex items-center justify-between"><span className="text-sm text-muted-foreground">{mine.length} playlists</span><Button variant="secondary" onClick={() => void newPlaylistPrompt()}><Plus/>New playlist</Button></div><div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-5">{mine.map(p => <Card key={p.id} art={p.tracks[0]?.art ?? ""} title={p.name} sub={`${p.tracks.length} songs`} onClick={() => { setSection("home"); push({ kind: "mine", id: p.id }); }}/>)}</div>{!mine.length && <p className="mt-8 text-sm text-muted-foreground">No saved playlists.</p>}</section> : <>
+          {error && <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm">{error} <Button variant="ghost" onClick={() => retryLoad.current ? void go(retryLoad.current, false) : void loadHome()}>Retry</Button></div>}
           {lyricsOpen && track && <section className="music-panel mb-6 rounded-xl p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="label-mono flex shrink-0 items-center gap-1.5"><Mic2 className="size-3.5" /> Lyrics</div>
@@ -302,7 +343,7 @@ export function MusicView() {
           {loading && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading…</p>}
 
           {!loading && view?.kind === "home" && <>
-            <div className="music-greeting"><h1>{section === "browse" ? "Browse All" : "Your music, your mood"}</h1></div>
+            <div className="music-greeting"><h1>{section === "browse" ? "Browse All" : "Qaisify"}</h1></div>
             {section !== "browse" && shelves.map(row => <section key={row.title}><H>{row.title}</H><Row>{row.tracks.map((song, index) => <Card key={song.id} art={song.art} title={song.title} sub={song.artist} onClick={() => void play(row.tracks, index)}/>)}</Row></section>)}
             <details className="qaisify-dj"><summary>AI DJ</summary>
             <section className="music-hero music-dj relative overflow-hidden rounded-2xl p-6 sm:p-8">
