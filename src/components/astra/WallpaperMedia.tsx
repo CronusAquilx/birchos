@@ -3,7 +3,7 @@ import { usePrefs } from "@/lib/astra/prefs";
 
 /** Shared silent wallpaper playback; never used by standalone gameplay. */
 export function WallpaperMedia({ src, type, poster, className, reduceMotion = false }: {
-  src: string; type?: "image" | "video"; poster?: string; className?: string; reduceMotion?: boolean;
+  src: string; type?: "image" | "video" | undefined; poster?: string | undefined; className?: string; reduceMotion?: boolean;
 }) {
   const prefs = usePrefs();
   const video = useRef<HTMLVideoElement>(null);
