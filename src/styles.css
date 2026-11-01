@@ -438,6 +438,8 @@ html[data-sidebar-width="wide"] .launcher-rail { width: 5rem; }
 }
 .windows-desktop { font-family: "Segoe UI", var(--font-sans); letter-spacing: 0; }
 .windows-wallpaper { filter: brightness(calc(1 - var(--custom-bg-dim, 55%) / 180)); }
+/* Video frames remain at their native scale; image-only motion must not enlarge decoded video. */
+video[data-wallpaper-video="true"] { animation: none !important; transform: none !important; }
 .windows-glass { background: color-mix(in oklch, var(--card) 93%, transparent); backdrop-filter: blur(28px); box-shadow: var(--desktop-shadow); }
 .windows-window { border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--desktop-shadow); background: var(--background); }
 .windows-window.is-active { border-color: color-mix(in oklch, var(--star) 65%, var(--border)); }

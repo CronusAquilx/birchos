@@ -1,5 +1,9 @@
 # Birchbeat import roadmap
 
+## Current request — maximum wallpaper sharpness
+- [x] Confirm no app wallpaper FPS cap; remove image-motion scaling from videos, buffer originals and repair absolute/cache-busted saved preview URLs.
+- [x] Verify native 3840×2160 playback with advancing frames and no CSS scaling; nine focused tests pass. Source softness and browser/device dropped frames cannot be uncapped into extra detail.
+
 ## Current request — original-quality wallpapers
 - [x] Replace all 294 preview loops with original downloads: 186 native 4K-or-higher, 107 other HD originals, one native 720p; upgrade saved preview URLs automatically.
 - [x] Probe imported video dimensions, pass 12 focused tests, and verify equipped Dreamy Landscape plays at 1920px rather than 480px.
