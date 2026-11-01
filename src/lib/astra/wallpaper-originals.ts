@@ -192,6 +192,7 @@ import original190 from "@/assets/wallpapers/originals/app1056628-preview-origin
 import original191 from "@/assets/wallpapers/originals/app1011111-preview-original.mp4.asset.json";
 import original192 from "@/assets/wallpapers/originals/app1010445-preview-original.mp4.asset.json";
 import original193 from "@/assets/wallpapers/originals/app1004005-preview-original.mp4.asset.json";
+import original194 from "@/assets/wallpapers/originals/app1003774-original.mp4.asset.json";
 import original195 from "@/assets/wallpapers/originals/app1003140-preview-original.mp4.asset.json";
 import original196 from "@/assets/wallpapers/originals/app356324-preview-original.mp4.asset.json";
 import original197 from "@/assets/wallpapers/originals/app1073601-preview-original.mp4.asset.json";
@@ -487,6 +488,7 @@ export const WALLPAPER_ORIGINALS: Record<string, { video: string; resolution: st
   "app1011111-preview": { video: original191.url, resolution: "3840x2160" },
   "app1010445-preview": { video: original192.url, resolution: "3840x2160" },
   "app1004005-preview": { video: original193.url, resolution: "1920x1080" },
+  "app1003774-preview": { video: original194.url, resolution: "1086x720" },
   "app1003140-preview": { video: original195.url, resolution: "3840x2160" },
   "app356324-preview": { video: original196.url, resolution: "3840x2160" },
   "app1073601-preview": { video: original197.url, resolution: "3840x2160" },
@@ -783,6 +785,7 @@ export const WALLPAPER_VIDEO_UPGRADES: Record<string, string> = {
   "/__l5e/assets-v1/2086b60e-7536-40b7-ab71-f7e54ad34f22/app1011111-preview.mp4": original191.url,
   "/__l5e/assets-v1/68b597a8-5546-49e9-9b7d-47580cdc4573/app1010445-preview.mp4": original192.url,
   "/__l5e/assets-v1/31ac032e-6001-4d6f-89f9-e79c1817c7b7/app1004005-preview.mp4": original193.url,
+  "/__l5e/assets-v1/5c1a8502-293b-41c0-8618-03c15e1d82b0/app1003774-preview.mp4": original194.url,
   "/__l5e/assets-v1/e1319111-aebf-4e37-9ef8-481cdae333b1/app1003140-preview.mp4": original195.url,
   "/__l5e/assets-v1/8ff60ec6-ffa2-44f0-bb50-7f73e47a4cc9/app356324-preview.mp4": original196.url,
   "/__l5e/assets-v1/f3f968c8-e47e-4aad-bc9f-1cba574e0714/app1073601-preview.mp4": original197.url,
