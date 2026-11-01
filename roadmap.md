@@ -1,9 +1,9 @@
 # Birchbeat import roadmap
 
 ## Current request — DesktopHut live wallpapers
-- [ ] Import downloadable wallpapers from the requested DesktopHut collection into a searchable settings catalog.
-- [ ] Apply video wallpapers through shared appearance profiles across all layouts without touching music.
-- [ ] Run only focused wallpaper checks; broad app testing remains user-owned.
+- [x] Import all 294 unique collection entries: hosted animated preview loops and covers, searchable settings catalog, original 4K download links (user confirmed import permission).
+- [x] Apply video wallpapers through shared appearance profiles across all layouts without touching music; shared silent video renderer honors motion/performance and pauses hidden tabs.
+- [x] 13 focused tests pass; guest Settings search/select verified a moving wallpaper (480px preview). Full-resolution files are not hosted; broad app/account testing remains user-owned.
 
 ## Current request — complete Qaisify and search repair
 - [x] Harden the reported catalog 500: retry main lookup, isolate album/artist failures, add secondary song catalog and same-search Retry; OWA OWA returns 30 tracks and six focused tests pass.
