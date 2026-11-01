@@ -132,15 +132,15 @@ export async function playList(list: Track[], i: number) {
   } catch (e) { if (my === playId) set({ loading: false, paused: true, status: e instanceof Error ? e.message : "Song unavailable" }); }
 }
 let proxyFrame: HTMLIFrameElement | null = null;
-function clearProxy() { proxyFrame?.remove(); proxyFrame = null; }
+function clearProxy() { proxyFrame?.remove(); proxyFrame = null; if (typeof document !== "undefined") document.querySelectorAll<HTMLElement>(".qaisify-playback-host").forEach(el => { el.style.visibility = ""; }); }
 async function proxyOrAudio(t: Track, my: number) {
   const id = candidates[0];
   if (prefsRef && id && typeof document !== "undefined") {
     try {
-      clearProxy(); yt?.stopVideo();
-      const f = document.createElement("iframe"); f.className = "qaisify-playback-host"; f.allow = "autoplay; encrypted-media"; f.style.cssText = "position:fixed;width:320px;height:180px;left:-9999px;bottom:0;border:0;opacity:0;pointer-events:none";
+      clearProxy(); yt?.stopVideo(); const ytHost = document.querySelector<HTMLElement>(".qaisify-playback-host"); if (ytHost) ytHost.style.visibility = "hidden";
+      const f = document.createElement("iframe"); f.className = "qaisify-playback-host"; f.allow = "autoplay; encrypted-media"; f.style.cssText = "position:fixed;width:320px;height:180px;right:12px;bottom:90px;border:0;border-radius:10px;z-index:2147483000;background:#000";
       document.body.appendChild(f); proxyFrame = f;
-      await openProxied(f, `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&playsinline=1`, prefsRef);
+      await openProxied(f, `https://www.youtube.com/watch?v=${encodeURIComponent(id)}&autoplay=1`, prefsRef);
       if (my !== playId) { clearProxy(); return; }
       recordPlayback(); set({ mode: null, fallbackId: id, loading: false, paused: false, status: "YouTube · via proxy" }); return;
     } catch { clearProxy(); }
