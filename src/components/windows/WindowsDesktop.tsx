@@ -15,6 +15,7 @@ import { RoomFollower } from "@/components/RoomFollower";
 import { cn } from "@/lib/utils";
 import wallpaper from "@/assets/launcher-wallpaper.jpg";
 import { WallpaperEffects } from "@/components/astra/WallpaperEffects";
+import { WallpaperMedia } from "@/components/astra/WallpaperMedia";
 import { DesktopClock, DesktopStatusBar } from "@/components/astra/DesktopSurface";
 import { AppIcon } from "@/components/astra/AppIcon";
 import { StoreView } from "./views/StoreView";
@@ -114,8 +115,7 @@ export function WindowsDesktop({ children, desktopOnly = false }: { children?: R
     }
   };
   return <div data-full-window={fullWindow} className="windows-desktop fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
-    {look.artwork && look.wallpaperType !== "video" && <img src={look.customBg || wallpaper} width={1920} height={1088} alt="" className="windows-wallpaper absolute inset-0 size-full object-cover"/>}
-    {look.artwork && look.wallpaperType === "video" && look.customBg && <video key={look.customBg} src={look.customBg} muted loop playsInline autoPlay={!look.reduceMotion && !prefs.perfMode} className="windows-wallpaper absolute inset-0 size-full object-cover"/>}
+    {look.artwork && <WallpaperMedia src={look.customBg || wallpaper} type={look.wallpaperType} poster={look.wallpaperPoster} reduceMotion={look.reduceMotion} className="windows-wallpaper absolute inset-0 size-full object-cover"/>}
     <WallpaperEffects/>
     <DesktopStatusBar onApps={() => { setStart(!start); setQuick(false); }} onSettings={() => { setQuick(!quick); setStart(false); }}/>
     <div ref={workspace} className="windows-workspace relative min-h-0 flex-1" onPointerDown={e => { if (e.target === e.currentTarget) { setStart(false); setQuick(false); setTasks(false); } }}>

@@ -10,6 +10,7 @@ import { getAppearance, usePrefs } from "@/lib/astra/prefs";
 import { DesktopDock, DesktopStatusBar } from "./DesktopSurface";
 import { SwitchShell } from "./SwitchSurface";
 import { WallpaperEffects } from "./WallpaperEffects";
+import { WallpaperMedia } from "./WallpaperMedia";
 import desktopWallpaper from "@/assets/launcher-wallpaper.jpg";
 import { toast } from "sonner";
 import { WebsiteFullscreenButton } from "@/components/FullscreenButton";
@@ -86,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ShellCtx.Provider value={{ openMenu: () => setMobileOpen(true), openCommand: () => setCmdOpen(true) }}>
       <div className={cn("app-shell flex h-dvh overflow-hidden bg-background", homeSurface && "desktop-home-shell", launcher && "reference-launcher")}>
-        {homeSurface && look.artwork && <img src={look.customBg || desktopWallpaper} alt="" width={1920} height={1080} className="reference-wallpaper"/>}
+        {homeSurface && look.artwork && <WallpaperMedia src={look.customBg || desktopWallpaper} type={look.wallpaperType} poster={look.wallpaperPoster} reduceMotion={look.reduceMotion} className="reference-wallpaper"/>}
         {homeSurface && <WallpaperEffects/>}
         {!homeSurface && (launcher ? (
           <IconRail onSearch={() => setCmdOpen(true)} />
