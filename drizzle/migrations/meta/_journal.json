@@ -50,6 +50,20 @@
       "when": 1793503240470,
       "tag": "0006_apply_imported_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793562391887,
+      "tag": "0007_drop_stale_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793562426957,
+      "tag": "0008_restore_roles",
+      "breakpoints": true
     }
   ]
 }
