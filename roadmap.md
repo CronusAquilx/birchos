@@ -3,7 +3,8 @@
 ## Current request — complete Qaisify and search repair
 - [x] Harden the reported catalog 500: retry main lookup, isolate album/artist failures, add secondary song catalog and same-search Retry; OWA OWA returns 30 tracks and six focused tests pass.
 - [x] Restore original Qaisify navigation, eight themes, playback speed, sleep timer, library, liked songs and queue actions in the shared music view.
-- [ ] Complete remaining full-project parity: original crossfade is storage-only, Jamendo needs a provider credential; listening and broad app checks remain user-tested.
+- [x] Original Library/Stats routes were absent, crossfade only stored a number, and Jamendo was unused; Library/Stats now have working views, while no fake crossfade or unused provider controls were transplanted.
+- [ ] Verify listening, playlist persistence and visual fidelity across layouts — user requested to perform broad app checks personally.
 
 ## Current request — old Qaisify music app
 - [x] Replace broken workspace connector with the user's saved server-only GOOGLE_API_KEY for YouTube lookups.
