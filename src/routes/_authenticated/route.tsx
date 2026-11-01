@@ -23,6 +23,8 @@ function AuthedLayout() {
         <AstraMark className="size-8" pulsing />
       </div>
     );
+  // Cloud games open /play in a fresh tab that has no guest flag; the player needs no account.
+  if (pathname === "/play") return <Outlet />;
   if (!session && !guest && !readGuest()) return <Navigate to="/auth" replace />;
   // The full-tab game player shows only the game (no sidebar or welcome prompts).
   if (pathname === "/play" || pathname.startsWith("/console")) return isAccountOnlyPath(pathname) ? <AccountOnly><Outlet /></AccountOnly> : <Outlet />;
