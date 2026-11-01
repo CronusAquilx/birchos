@@ -1,5 +1,10 @@
 # Birchbeat import roadmap
 
+## Current request — complete Qaisify and search repair
+- [ ] Repair the reported OWA OWA / any-song catalog 500 with a focused endpoint check.
+- [ ] Import original Qaisify navigation, settings, library, playlists and remaining music workflows into every shared layout.
+- [ ] Leave listening and broad app checks to the user.
+
 ## Current request — old Qaisify music app
 - [x] Replace broken workspace connector with the user's saved server-only GOOGLE_API_KEY for YouTube lookups.
 - [x] Confirm saved GOOGLE_API_KEY reaches the running music service — refreshed service; OWA OWA lookup returns five playable video candidates without a connection error.
