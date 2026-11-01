@@ -71,7 +71,7 @@ function youtubePlayer(): Promise<YTPlayer> {
         onError: (event: { data: number }) => {
           if (state.mode !== "video" || ytGeneration !== playId) return;
           if (event.data !== 153 && candidates[candidateIndex + 1] && yt) { candidateIndex++; yt.loadVideoById(candidates[candidateIndex] ?? ""); set({ loading: true, status: "Trying another verified video…" }); }
-          else { stopPolling(); const t = state.queue[state.cur]; set({ mode: null, fallbackId: candidates[0] ?? null, status: "Video blocked — switching to audio…" }); if (t) void audioFallback(t, playId); }
+          else { stopPolling(); const t = state.queue[state.cur]; set({ mode: null, fallbackId: candidates[0] ?? null, status: "Video blocked — switching to audio…" }); if (t) void proxyOrAudio(t, playId); }
         },
       } });
     };
@@ -102,7 +102,7 @@ export function addToQueue(t: Track) { set({ queue: [...state.queue, t] }); }
 export function removeFromQueue(i: number) { if (i === state.cur) return; set({ queue: state.queue.filter((_, n) => i !== n), cur: i < state.cur ? state.cur - 1 : state.cur }); }
 export async function playList(list: Track[], i: number) {
   ensure(); const t = list[i]; if (!t || !audio) return;
-  const my = ++playId; stopPolling(); audio.pause(); audio.removeAttribute("src"); yt?.stopVideo();
+  const my = ++playId; clearProxy(); stopPolling(); audio.pause(); audio.removeAttribute("src"); yt?.stopVideo();
   set({ queue: list, cur: i, status: "Finding your song…", paused: true, loading: true, time: 0, dur: t.duration, mode: null, fallbackId: null });
   audio.playbackRate = state.speed;
   const want = { q: `${t.artist} ${t.title}`, title: t.title, artist: t.artist, duration: String(t.duration || 0), preview: t.preview ?? "" };
@@ -120,15 +120,32 @@ export async function playList(list: Track[], i: number) {
     if (my !== playId) return;
     const first = result.ids[0];
     if (!first) { set({ status: "Switching to audio…" }); void audioFallback(t, my); return; }
+    candidates = result.ids;
     const player = await ready;
     if (my !== playId) return;
     if (!player) { set({ loading: false, paused: true, fallbackId: first, status: "YouTube controls unavailable — open player" }); return; }
     candidates = result.ids; candidateIndex = 0; ytGeneration = my;
     set({ mode: "video", status: "Starting YouTube…" }); player.loadVideoById(first); player.setVolume(state.volume * 100); player.setPlaybackRate?.(state.speed); player.playVideo();
-    const watchdog = (index: number) => setTimeout(() => { if (my !== playId || !state.loading || candidateIndex !== index) return; const nextId = candidates[index + 1]; if (nextId && yt) { candidateIndex = index + 1; yt.loadVideoById(nextId); set({ status: "Trying another video…" }); watchdog(index + 1); } else void audioFallback(t, my); }, 7000);
+    const watchdog = (index: number) => setTimeout(() => { if (my !== playId || !state.loading || candidateIndex !== index) return; const nextId = candidates[index + 1]; if (nextId && yt) { candidateIndex = index + 1; yt.loadVideoById(nextId); set({ status: "Trying another video…" }); watchdog(index + 1); } else void proxyOrAudio(t, my); }, 7000);
     watchdog(0);
     const upcoming = list[i + 1]; if (upcoming) void musicApi({ op: "video", q: `${upcoming.artist} ${upcoming.title}`, title: upcoming.title, artist: upcoming.artist }).catch(() => {});
   } catch (e) { if (my === playId) set({ loading: false, paused: true, status: e instanceof Error ? e.message : "Song unavailable" }); }
+}
+let proxyFrame: HTMLIFrameElement | null = null;
+function clearProxy() { proxyFrame?.remove(); proxyFrame = null; }
+async function proxyOrAudio(t: Track, my: number) {
+  const id = candidates[0];
+  if (prefsRef && id && typeof document !== "undefined") {
+    try {
+      clearProxy(); yt?.stopVideo();
+      const f = document.createElement("iframe"); f.className = "qaisify-playback-host"; f.allow = "autoplay; encrypted-media"; f.style.cssText = "position:fixed;width:320px;height:180px;left:-9999px;bottom:0;border:0;opacity:0;pointer-events:none";
+      document.body.appendChild(f); proxyFrame = f;
+      await openProxied(f, `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&playsinline=1`, prefsRef);
+      if (my !== playId) { clearProxy(); return; }
+      recordPlayback(); set({ mode: null, fallbackId: id, loading: false, paused: false, status: "YouTube · via proxy" }); return;
+    } catch { clearProxy(); }
+  }
+  return audioFallback(t, my);
 }
 async function audioFallback(t: Track, my: number) {
   ensure();
@@ -139,11 +156,11 @@ async function audioFallback(t: Track, my: number) {
   } catch { /* fall through to proxy player */ }
   if (my === playId) set({ loading: false, paused: true, status: "Open the proxied player to listen" });
 }
-export function toggle() { ensure(); if (state.mode === "audio" && audio?.src) { if (audio.paused) void audio.play().catch(() => set({ status: "Press play again", loading: false })); else audio.pause(); } else if (state.mode === "video" && yt) { if (state.paused) yt.playVideo(); else yt.pauseVideo(); } else if (state.cur >= 0) void playList(state.queue, state.cur); }
+export function toggle() { ensure(); if (proxyFrame) { clearProxy(); set({ paused: true }); return; } if (state.mode === "audio" && audio?.src) { if (audio.paused) void audio.play().catch(() => set({ status: "Press play again", loading: false })); else audio.pause(); } else if (state.mode === "video" && yt) { if (state.paused) yt.playVideo(); else yt.pauseVideo(); } else if (state.cur >= 0) void playList(state.queue, state.cur); }
 export function next() { const index = nextQueueIndex(state.cur, state.queue.length, state.repeat, state.shuffle); if (index >= 0) void playList(state.queue, index); else { audio?.pause(); yt?.pauseVideo(); stopPolling(); set({ paused: true, loading: false }); } }
 export function prev() { if (state.time > 3) { seek(0); return; } void playList(state.queue, Math.max(0, state.cur - 1)); }
 export function seek(t: number) { const time = Math.max(0, Math.min(t, state.dur)); if (state.mode === "audio" && audio) audio.currentTime = time; if (state.mode === "video") yt?.seekTo(time, true); set({ time }); }
-export function stop() { playId++; audio?.pause(); yt?.stopVideo(); stopPolling(); set({ cur: -1, queue: [], mode: null, paused: true, loading: false, fallbackId: null }); }
+export function stop() { playId++; clearProxy(); audio?.pause(); yt?.stopVideo(); stopPolling(); set({ cur: -1, queue: [], mode: null, paused: true, loading: false, fallbackId: null }); }
 export function getAudio() { ensure(); return audio; }
 export function getPlayer() { return state; }
 export async function openMusicProxy(iframe: HTMLIFrameElement) { const t = state.queue[state.cur]; const videoId = state.fallbackId ?? candidates[candidateIndex]; if (!prefsRef || !t || !videoId) return; yt?.pauseVideo(); set({ paused: true, mode: null }); await openProxied(iframe, `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`, prefsRef); }
