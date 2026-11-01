@@ -20,6 +20,7 @@ export type AppearanceProfile = Pick<Prefs, "palette" | "accent" | "fontScale" |
   desktopWidgets?: DesktopWidget[];
   wallpaperType?: "image" | "video";
   wallpaperPoster?: string;
+  wallpaperPlayback?: boolean;
 };
 export type AppearanceProfiles = Partial<Record<AppearanceLayout, AppearanceProfile>>;
 export function activeLayout(p: Pick<Prefs, "console" | "layout">): AppearanceLayout {

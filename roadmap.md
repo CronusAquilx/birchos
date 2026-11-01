@@ -1,5 +1,9 @@
 # Birchbeat import roadmap
 
+## Current request — hide music bar and repair live playback
+- [x] Add a persistent music-bar hide option with a way to restore it, without stopping songs.
+- [x] Repair catalog video playback with an independent animation switch; 20 focused tests pass and guest UI hide/restore, animation playback under OS reduced motion and pause/resume verified.
+
 ## Current request — DesktopHut live wallpapers
 - [x] Import all 294 unique collection entries: hosted animated preview loops and covers, searchable settings catalog, original 4K download links (user confirmed import permission).
 - [x] Apply video wallpapers through shared appearance profiles across all layouts without touching music; shared silent video renderer honors motion/performance and pauses hidden tabs.

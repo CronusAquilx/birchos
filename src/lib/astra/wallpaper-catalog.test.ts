@@ -9,6 +9,7 @@ describe("shared live wallpaper catalog", () => {
     const current = initialAppearance(DEFAULT_PREFS);
     const saved = updateAppearance({ classic: current }, layout, current, wallpaperPatch(layout, item));
     expect(saved[layout]?.wallpaperType).toBe("video");
+    expect(saved[layout]?.wallpaperPlayback).toBe(true);
     expect(saved[layout]?.wallpaperPoster).toBe("/lake.jpg");
     expect(["sony", "series", "wii", "neutral"].includes(layout) ? saved[layout]?.consoleCustomBg : saved[layout]?.customBg).toBe("/loop.mp4");
     expect(saved.classic?.customBg).toBe(current.customBg);
