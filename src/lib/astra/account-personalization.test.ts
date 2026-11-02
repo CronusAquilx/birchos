@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 const cloud = vi.hoisted(() => ({ rows: new Map<string, unknown>(), owner: "" }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: () => ({ select: () => ({ eq: (_column: string, owner: string) => ({ maybeSingle: async () => ({ data: cloud.rows.has(owner) ? { data: cloud.rows.get(owner) } : null, error: null }) }) }), upsert: async (row: { user_id: string; data: unknown }) => { cloud.rows.set(row.user_id, row.data); return { error: null }; } }) } }));
-import { activatePreferenceAccount, flushPreferences, getPrefsSnapshot, setAppearance, setPrefs } from "./prefs";
+import { activatePreferenceAccount, flushPreferences, getPrefsSnapshot, setAppearance, setPrefs, saveAppearancePreset, applyAppearancePreset } from "./prefs";
 import { addDesktopShortcut } from "@/lib/windows/desktop-shortcuts";
 
 describe("account personalization", () => {
@@ -43,8 +43,19 @@ describe("account personalization", () => {
     setAppearance("windows", { customBg: "https://example.org/shared.mp4", particles: "stars", brightness: 95 });
     expect(getPrefsSnapshot().appearances.sony?.consoleCustomBg).toBe("https://example.org/shared.mp4");
     expect(getPrefsSnapshot().appearances.switch?.particles).toBe("stars");
+    saveAppearancePreset("Night sky");
+    setPrefs({ console: "sony" });
+    expect(getPrefsSnapshot().appearances.sony?.brightness).toBe(95);
     await flushPreferences();
     await activatePreferenceAccount("account-other");
     expect(getPrefsSnapshot().appearances.windows?.customBg ?? "").toBe("");
+    expect(getPrefsSnapshot().appearancePresets).toEqual([]);
+    await activatePreferenceAccount("account-shared");
+    const preset = getPrefsSnapshot().appearancePresets[0];
+    expect(preset?.name).toBe("Night sky");
+    if (!preset) throw new Error("Missing preset");
+    setAppearance("sony", { particles: "rain" });
+    applyAppearancePreset(preset);
+    expect(getPrefsSnapshot().appearances.sony?.particles).toBe("stars");
   });
 });

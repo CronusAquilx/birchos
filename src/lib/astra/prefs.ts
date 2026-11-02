@@ -254,7 +254,7 @@ export function setPrefs(p: Partial<Prefs>) {
     if (key in p) Object.assign(appearancePatch, { [key]: p[key as keyof Prefs] });
   }
   let appearances = p.appearances ?? updateAppearance(state.appearances, previous, look, appearancePatch);
-  if ((p.syncLayouts ?? state.syncLayouts) && (Object.keys(appearancePatch).length || p.syncLayouts === true)) {
+  if ((p.syncLayouts ?? state.syncLayouts) && (Object.keys(appearancePatch).length || p.syncLayouts === true || "layout" in p || "console" in p)) {
     appearances = syncAppearance(appearances, { ...look, ...appearancePatch });
   }
   state = { ...state, ...p, appearances };
