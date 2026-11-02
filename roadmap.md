@@ -1,5 +1,11 @@
 # Birchbeat import roadmap
 
+## Current request — account personalization
+- [ ] Expand shared appearance controls and preview: original dots/accents, liquid glass, brightness, motion and clocks.
+- [ ] Add game/movie Windows desktop shortcuts and removal.
+- [ ] Save preferences and desktop customization per account, with isolated guest state.
+- [ ] Add first-account personalization preview before confirmation; run focused checks.
+
 ## Current request — maximum wallpaper sharpness
 - [x] Confirm no app wallpaper FPS cap; remove image-motion scaling from videos, buffer originals and repair absolute/cache-busted saved preview URLs.
 - [x] Verify native 3840×2160 playback with advancing frames and no CSS scaling; nine focused tests pass. Source softness and browser/device dropped frames cannot be uncapped into extra detail.
