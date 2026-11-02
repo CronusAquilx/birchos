@@ -73,6 +73,15 @@
 
 /* Light: paper */
 :root {
+  --effect-light: oklch(0.98 0.01 225);
+  --effect-shadow: oklch(0.18 0.018 235);
+  --cinema-surface: oklch(0.14 0.006 250);
+  --cinema-ink: oklch(0.97 0.004 230);
+  --cinema-soft: oklch(0.78 0.012 235);
+  --cinema-highlight: oklch(0.8 0.11 230);
+  --cinema-line: oklch(1 0 0 / 13%);
+  --cinema-veil: oklch(0.1 0.005 250 / 80%);
+  --cinema-hero-shadow: linear-gradient(90deg, oklch(0.08 0.008 250 / 88%), transparent 85%), linear-gradient(0deg, var(--cinema-surface), transparent 72%);
   --radius: 0.3rem;
   --background: oklch(0.975 0.006 85);
   --foreground: oklch(0.2 0.015 260);
