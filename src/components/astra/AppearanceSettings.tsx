@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ACCENTS, PALETTES, getAppearance, resetAppearance, setAppearance, usePrefs, usePreferenceSaveStatus, flushPreferences } from "@/lib/astra/prefs";
+import { ACCENTS, PALETTES, getAppearance, resetAppearance, setAppearance, setPrefs, usePrefs, usePreferenceSaveStatus, flushPreferences } from "@/lib/astra/prefs";
 import { activeLayout, VISIBLE_LAYOUTS, LAYOUT_NAMES, type AppearanceLayout, type AppearanceProfile } from "@/lib/astra/appearance";
 import { cn } from "@/lib/utils";
 import landscape from "@/assets/console-landscape.jpg";
@@ -18,6 +18,7 @@ import { WallpaperCatalog } from "./WallpaperCatalog";
 import { AppearancePreview } from "./AppearancePreview";
 import { PersonalizationControls } from "./PersonalizationControls";
 import { toast } from "sonner";
+import { AppearancePresets } from "./AppearancePresets";
 
 function Setting({ label, children }: { label: string; children: ReactNode }) {
   return <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border py-4"><span className="text-sm">{label}</span><div className="max-w-full">{children}</div></div>;
@@ -33,6 +34,8 @@ export function AppearanceSettings() {
   const [image, setImage] = useState("");
   const [error, setError] = useState("");
   return <div className="appearance-settings text-foreground">
+    <Setting label="Sync personalization across layouts"><Switch aria-label="Sync personalization across layouts" checked={p.syncLayouts} onCheckedChange={syncLayouts => setPrefs({ syncLayouts })}/></Setting>
+    <AppearancePresets/>
     <nav aria-label="Customize layout" className="flex flex-wrap gap-2 border-b border-border pb-5">
       {VISIBLE_LAYOUTS.map(id => <Button key={id} variant={layout === id ? "secondary" : "ghost"} aria-pressed={layout === id} onClick={() => { setLayout(id); setImage(""); setError(""); }}>{id === "sony" || id === "series" ? <Gamepad2/> : <LayoutPanelLeft/>}{LAYOUT_NAMES[id]}</Button>)}
     </nav>
