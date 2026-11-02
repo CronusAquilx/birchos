@@ -457,6 +457,12 @@ html[data-icon-labels="off"] .windows-shortcut > span:last-child { visibility: h
 .personalization-control > :last-child { flex-shrink: 0; }
 .personalization-preview { position: relative; isolation: isolate; aspect-ratio: 16 / 10; min-height: 190px; overflow: hidden; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--desktop-ink); filter: brightness(var(--preview-brightness, 1)); }
 .personalization-preview[data-mode="light"] { background: var(--card); }
+.personalization-preview[data-mode="light"] { --card: oklch(.97 .005 240); --foreground: oklch(.2 .015 260); --background: oklch(.95 .008 240); }
+.personalization-preview[data-mode="dark"] { --card: oklch(.2 .012 260); --foreground: oklch(.95 .005 240); --background: oklch(.15 .012 260); }
+.windows-desktop::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+html[data-bg="dots"] .windows-desktop::before { background: radial-gradient(var(--liquid-edge) 1px, transparent 1px) 0 0 / 22px 22px; z-index: 1; }
+html[data-bg="grid"] .windows-desktop::before { background-image: linear-gradient(var(--liquid-sheen) 1px, transparent 1px), linear-gradient(90deg, var(--liquid-sheen) 1px, transparent 1px); background-size: 32px 32px; z-index: 1; }
+.windows-custom-shortcuts { z-index: 2; }
 .personalization-preview-wallpaper { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: cover; }
 .personalization-preview-pattern { position: absolute; inset: 0; pointer-events: none; }
 .personalization-preview[data-pattern="dots"] .personalization-preview-pattern { background: radial-gradient(var(--liquid-edge) 1px, transparent 1px) 0 0 / 20px 20px; }

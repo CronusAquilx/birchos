@@ -5,13 +5,14 @@ import { WallpaperMedia } from "./WallpaperMedia";
 import { WallpaperEffects } from "./WallpaperEffects";
 import desktopWallpaper from "@/assets/launcher-wallpaper.jpg";
 import consoleWallpaper from "@/assets/console-landscape.jpg";
+import { ACCENTS } from "@/lib/astra/prefs";
 
 export function AppearancePreview({ layout, look }: { layout: AppearanceLayout; look: AppearanceProfile }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => { setNow(new Date()); const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   const consoleMode = ["sony", "series", "wii", "neutral"].includes(layout);
   const src = (consoleMode ? look.consoleCustomBg : look.customBg) || (consoleMode ? consoleWallpaper : desktopWallpaper);
-  const style = { "--preview-brightness": (look.brightness ?? 100) / 100, "--glass-opacity": `${look.glassOpacity ?? 65}%`, "--glass-blur": `${look.glassBlur ?? 24}px` } as CSSProperties;
+  const style = { "--star": look.customAccent || ACCENTS[look.accent] || "var(--primary)", "--preview-brightness": (look.brightness ?? 100) / 100, "--glass-opacity": `${look.glassOpacity ?? 65}%`, "--glass-blur": `${look.glassBlur ?? 24}px` } as CSSProperties;
   return <div className="personalization-preview" style={style} data-mode={look.mode} data-pattern={look.background} data-surface={look.appTransparency} data-layout={layout} role="img" aria-label={`${LAYOUT_NAMES[layout]} personalization preview`}>
     {look.artwork && <WallpaperMedia src={src} type={look.wallpaperType} poster={look.wallpaperPoster} playback={look.wallpaperPlayback} reduceMotion={look.reduceMotion} className="personalization-preview-wallpaper"/>}
     <div className="personalization-preview-pattern"/><WallpaperEffects appearance={look}/>
