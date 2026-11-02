@@ -1,3 +1,8 @@
+import { Button } from "@/components/ui/button";
+import { MonitorPlus } from "lucide-react";
+import { addDesktopShortcut } from "@/lib/windows/desktop-shortcuts";
+import { usePrefs } from "@/lib/astra/prefs";
+import { toast } from "sonner";
 import { Link } from '@tanstack/react-router';
 import { Star, Play } from 'lucide-react';
 import { img, type TMDBMovie } from '@/lib/movies/tmdb';
@@ -10,6 +15,7 @@ interface Props {
 }
 
 export default function MovieCard({ movie, index = 0, showRank, compact }: Props) {
+  const prefs = usePrefs();
   const title = movie.title || movie.name || 'Untitled';
   const year = (movie.release_date || movie.first_air_date || '').slice(0, 4);
   const mediaType = movie.media_type;
@@ -19,11 +25,12 @@ export default function MovieCard({ movie, index = 0, showRank, compact }: Props
     : 'movie';
   const rating = movie.vote_average?.toFixed(1);
   const rank = (index ?? 0) + 1;
+  const shortcut = prefs.layout === "windows" && prefs.console === "off" ? <Button variant="secondary" size="icon" className="absolute right-1 top-1 z-20 size-8" title="Add to desktop" aria-label={`Add ${title} to desktop`} onClick={() => { addDesktopShortcut({ id: `movie:${type}:${movie.id}`, kind: "movie", title, tmdbId: movie.id, mediaType: type, image: img(movie.poster_path) }); toast("Added to desktop"); }}><MonitorPlus className="size-4"/></Button> : null;
 
   if (showRank && rank <= 10) {
     return (
       <div className="relative flex items-end shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <span className={`${compact ? 'mr-[-18px] text-8xl' : 'mr-[-24px] text-[140px]'} pointer-events-none select-none pr-1 font-display leading-none text-transparent [-webkit-text-stroke:2px_var(--muted-foreground)]`}>
+        {shortcut}<span className={`${compact ? 'mr-[-18px] text-8xl' : 'mr-[-24px] text-[140px]'} pointer-events-none select-none pr-1 font-display leading-none text-transparent [-webkit-text-stroke:2px_var(--muted-foreground)]`}>
           {rank}
         </span>
         <Link to="/movies/title/$type/$id" params={{ type, id: String(movie.id) }} className={`group relative snap-start ${compact ? 'w-[130px]' : 'w-[42vw] max-w-[190px] min-w-[154px] sm:w-[180px] lg:w-[190px]'}`}>
@@ -46,7 +53,7 @@ export default function MovieCard({ movie, index = 0, showRank, compact }: Props
 
   return (
     <div className={`group relative shrink-0 snap-start ${compact ? 'w-[130px]' : 'w-[42vw] max-w-[190px] min-w-[154px] sm:w-[180px] lg:w-[190px]'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-      {movie.resume && (
+      {shortcut}{movie.resume && (
         <Link to="/movies/watch/$type/$id" params={{ type, id: String(movie.id) }} search={movie.resume}
           className="absolute left-1.5 top-1.5 z-10 rounded bg-background/85 px-1.5 py-0.5 text-[10px] font-medium text-foreground backdrop-blur">
           ▶ {movie.resume.s ? `S${movie.resume.s} E${movie.resume.e ?? 1}` : "Resume"}{movie.resume.t ? ` · ${Math.floor(movie.resume.t / 60)}:${String(movie.resume.t % 60).padStart(2, "0")}` : ""}
