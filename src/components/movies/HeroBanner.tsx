@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Play, Info } from 'lucide-react';
+import { Play, Info, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { backdrop, type TMDBMovie } from '@/lib/movies/tmdb';
 
 interface Props {
@@ -19,9 +20,9 @@ export default function HeroBanner({ movies }: Props) {
     return () => clearInterval(timer);
   }, [featured.length]);
 
-  const movie = featured[current];
+  const movie = featured[current % Math.max(featured.length, 1)];
   if (!movie) {
-    return <div className="relative h-[70vh] sm:h-[80vh] bg-secondary/30 animate-pulse" />;
+    return <div className="cinema-hero bg-secondary/30 animate-pulse" />;
   }
 
   const title = movie.title || movie.name || 'Untitled';
@@ -30,53 +31,55 @@ export default function HeroBanner({ movies }: Props) {
     : 'movie';
 
   return (
-    <div className="relative h-[70vh] sm:h-[80vh] overflow-hidden">
+    <section className="cinema-hero relative overflow-hidden" aria-label="Featured movies">
       <img
         key={movie.id}
         src={backdrop(movie.backdrop_path)}
         alt={title}
-        className="absolute inset-0 w-full h-full object-cover animate-in fade-in duration-700"
+        className="cinema-hero-image absolute inset-0 w-full h-full object-cover animate-in fade-in duration-700"
         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/30 to-transparent" />
+      <div className="cinema-hero-shade absolute inset-0" />
 
-      <div className="absolute bottom-[18%] left-0 right-0 px-5 sm:px-8 max-w-[1400px] mx-auto">
+      <div className="cinema-hero-content">
         <div key={movie.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h1 className="font-serif text-5xl sm:text-7xl lg:text-8xl text-foreground mb-4 max-w-2xl tracking-[0.08em] leading-none">
+          <span className="cinema-eyebrow">BIRCH CINEMA · IN THE SPOTLIGHT</span>
+          <h1 className="cinema-feature-title">
             {title}
           </h1>
-          <p className="text-sm sm:text-base text-foreground/80 max-w-xl line-clamp-2 mb-6">{movie.overview}</p>
+          <div className="cinema-feature-meta"><span className="inline-flex items-center gap-1"><Star className="size-3"/>{movie.vote_average.toFixed(1)}</span><span>{(movie.release_date || movie.first_air_date || '').slice(0,4)}</span><span>{type === 'tv' ? 'TV SERIES' : 'MOVIE'}</span></div>
+          <p className="cinema-feature-description">{movie.overview}</p>
           <div className="flex gap-2.5 flex-wrap">
-            <Link
+            <Button asChild size="lg"><Link
               to="/movies/watch/$type/$id"
               params={{ type, id: String(movie.id) }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-foreground text-background font-semibold hover:opacity-90 transition-opacity shadow-lg"
             >
               <Play fill="currentColor" size={16} /> Watch now
-            </Link>
-            <Link
+            </Link></Button>
+            <Button asChild variant="secondary" size="lg"><Link
               to="/movies/title/$type/$id"
               params={{ type, id: String(movie.id) }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 text-white font-semibold hover:bg-white/15 transition-colors"
             >
               <Info size={16} /> More info
-            </Link>
+            </Link></Button>
           </div>
         </div>
 
-        <div className="flex gap-1.5 mt-8">
+        <div className="cinema-slides flex items-center gap-2 mt-6">
+          <Button variant="ghost" size="icon" aria-label="Previous featured movie" onClick={() => setCurrent(c => (c - 1 + featured.length) % featured.length)}><ChevronLeft/></Button>
           {featured.map((_, i) => (
-            <button
+            <Button variant="ghost" size="icon"
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1 rounded-full transition-all duration-300 ${i === current ? 'w-6 bg-white' : 'w-1 bg-white/30'}`}
-            />
+              aria-pressed={i === current}
+              className="cinema-slide-dot size-6"
+            ><span/></Button>
           ))}
+          <Button variant="ghost" size="icon" aria-label="Next featured movie" onClick={() => setCurrent(c => (c + 1) % featured.length)}><ChevronRight/></Button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -46,8 +46,7 @@ const APPS = [
   { id: "settings", title: "Settings", icon: Settings, tone: "neutral" },
 ] as const;
 const appInfo = (id: DesktopApp) => APPS.find(a => a.id === id) ?? APPS[0];
-let serial = 0;
-const uid = () => `desktop-${++serial}`;
+const uid = () => `desktop-${crypto.randomUUID()}`;
 const tabFor = (app: DesktopApp): WindowTab => ({ id: uid(), app, title: appInfo(app).title });
 
 export function WindowsDesktop({ children, desktopOnly = false }: { children?: ReactNode; desktopOnly?: boolean }) {
@@ -55,6 +54,17 @@ export function WindowsDesktop({ children, desktopOnly = false }: { children?: R
   const { user } = useAuth(); const navigate = useNavigate();
   const path = useRouterState({ select: s => s.location.pathname });
   const [state, dispatch] = useReducer(desktopReducer, { windows: [], active: null });
+  const [restored, setRestored] = useState(false);
+  const sessionKey = `birch-windows-session:${user?.id ?? "guest"}`;
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(sessionKey) || "null") as { windows?: DesktopWindow[]; active?: string } | null;
+      saved?.windows?.filter(w => w.tabs.every(t => t.app !== "route")).forEach(w => dispatch({ type: "open", window: w }));
+      if (saved?.active) dispatch({ type: "focus", id: saved.active });
+    } catch { /* invalid tab state */ }
+    setRestored(true);
+  }, [sessionKey]);
+  useEffect(() => { if (restored) sessionStorage.setItem(sessionKey, JSON.stringify(state)); }, [state, restored, sessionKey]);
   const [start, setStart] = useState(false); const [tasks, setTasks] = useState(false); const [quick, setQuick] = useState(false);
   const [query, setQuery] = useState(""); const [addTab, setAddTab] = useState<string | null>(null);
   const [closing, setClosing] = useState<string[]>([]);
