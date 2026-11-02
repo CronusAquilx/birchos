@@ -1,7 +1,11 @@
 import { useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import type { DesktopShortcut } from "@/lib/windows/desktop-shortcuts";
 import { activeLayout, initialAppearance, updateAppearance, type AppearanceLayout, type AppearanceProfile, type AppearanceProfiles } from "./appearance";
 
 export type Prefs = {
+  desktopShortcuts: DesktopShortcut[];
   musicTheme: string;
   musicBarHidden: boolean;
   appearances: AppearanceProfiles;
@@ -44,6 +48,7 @@ export type Prefs = {
 };
 
 export const DEFAULT_PREFS: Prefs = {
+  desktopShortcuts: [],
   musicTheme: "midnight-void",
   musicBarHidden: false,
   appearances: {},
@@ -124,6 +129,51 @@ const KEY = "astra-prefs";
 let state: Prefs = DEFAULT_PREFS;
 let loaded = false;
 const subs = new Set<() => void>();
+let account: string | null | undefined;
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+let revision = 0;
+let accountReady = false;
+let saveStatus: "local" | "saving" | "saved" | "error" = "local";
+const statusSubs = new Set<() => void>();
+function status(value: typeof saveStatus) { saveStatus = value; statusSubs.forEach(f => f()); }
+export function usePreferenceSaveStatus() { return useSyncExternalStore(f => { statusSubs.add(f); return () => { statusSubs.delete(f); }; }, () => saveStatus, () => "local" as const); }
+const serialize = (value: Prefs) => JSON.stringify(value, (_key, item) => typeof item === "string" && item.startsWith("blob:") ? "" : item);
+export function getPrefsSnapshot() { load(); return state; }
+export function subscribePrefs(f: () => void) { subs.add(f); return () => { subs.delete(f); }; }
+
+/** Identity switches never read another account's browser-wide settings. */
+export async function activatePreferenceAccount(userId: string | null) {
+  if (account === userId) return;
+  clearTimeout(saveTimer);
+  const generation = ++revision;
+  const selection = { layout: state.layout, console: state.console };
+  account = userId; accountReady = false; loaded = true;
+  let cached: Partial<Prefs> = {};
+  if (userId) { try { cached = JSON.parse(localStorage.getItem(`${KEY}:${userId}`) || "{}"); } catch { /* invalid cache */ } }
+  state = { ...DEFAULT_PREFS, ...cached, ...selection };
+  state = { ...state, ...getAppearance(state) };
+  apply(); subs.forEach(f => f()); status("local");
+  if (!userId) { accountReady = true; localStorage.removeItem(KEY); return; }
+  const { data, error } = await supabase.from("user_preferences").select("data").eq("user_id", userId).maybeSingle();
+  if (generation !== revision) return;
+  if (data?.data && typeof data.data === "object" && !Array.isArray(data.data)) {
+    state = { ...DEFAULT_PREFS, ...data.data as Partial<Prefs>, ...selection };
+    state = { ...state, ...getAppearance(state) };
+    localStorage.setItem(`${KEY}:${userId}`, serialize(state));
+  }
+  accountReady = true; apply(); subs.forEach(f => f()); status(error ? "error" : "saved");
+}
+
+export async function flushPreferences() {
+  clearTimeout(saveTimer);
+  if (!account || !accountReady) return;
+  const owner = account; const generation = revision; const data = JSON.parse(serialize(state)) as Json;
+  status("saving");
+  const { error } = await supabase.from("user_preferences").upsert({ user_id: owner, data, updated_at: new Date().toISOString() });
+  if (generation !== revision) return;
+  status(error ? "error" : "saved");
+  if (error) throw new Error("Your look is saved on this device, but account syncing failed. Try saving again.");
+}
 
 function load() {
   if (loaded || typeof window === "undefined") return;
@@ -155,6 +205,11 @@ function apply() {
   r.dataset["sidebarWidth"] = look.sidebarWidth;
   r.dataset["wallpaperMotion"] = look.wallpaperMotion;
   r.dataset["appTransparency"] = look.appTransparency;
+  r.dataset["dockMotion"] = look.dockMotion === false ? "off" : "on";
+  r.dataset["iconLabels"] = look.iconLabels === false ? "off" : "on";
+  r.style.setProperty("--appearance-brightness", `${(look.brightness ?? 100) / 100}`);
+  r.style.setProperty("--glass-opacity", `${look.glassOpacity ?? 65}%`);
+  r.style.setProperty("--glass-blur", `${look.glassBlur ?? 24}px`);
   r.dataset["consoleTone"] = state.palette !== "default" ? "palette" : look.mode;
   r.dataset["consoleAccent"] = state.accent === "star" && !look.customAccent ? "native" : "custom";
   r.style.setProperty("--custom-bg-dim", `${state.customBgDim}%`);
@@ -192,7 +247,11 @@ export function setPrefs(p: Partial<Prefs>) {
   const next = activeLayout(state);
   const nextLook = appearances[next] ?? initialAppearance(DEFAULT_PREFS);
   state = { ...state, ...nextLook };
-  localStorage.setItem(KEY, JSON.stringify(state, (_key, value) => typeof value === "string" && value.startsWith("blob:") ? "" : value));
+  if (account !== null) localStorage.setItem(KEY, serialize(state));
+  if (account) {
+    localStorage.setItem(`${KEY}:${account}`, serialize(state));
+    if (accountReady) { status("saving"); clearTimeout(saveTimer); saveTimer = setTimeout(() => { void flushPreferences().catch(() => {}); }, 700); }
+  }
   apply();
   subs.forEach((f) => f());
 }
