@@ -17,7 +17,8 @@ describe("account personalization", () => {
     await activatePreferenceAccount("account-a");
     expect(getPrefsSnapshot().appearances.windows?.customBg).toBe("https://example.org/a.jpg");
     expect(getPrefsSnapshot().appearances.windows?.brightness).toBe(85);
-    expect(getPrefsSnapshot().desktopShortcuts[0]?.tmdbId).toBe(10);
+    const shortcut = getPrefsSnapshot().desktopShortcuts[0];
+    expect(shortcut?.kind === "movie" ? shortcut.tmdbId : null).toBe(10);
   });
   it("does not save guest personalization to an account or browser storage", async () => {
     await activatePreferenceAccount(null);
