@@ -1,3 +1,7 @@
+import { Button } from "@/components/ui/button";
+import { SquarePlus } from "lucide-react";
+import { addDesktopShortcut, type ArcadeShortcutGame } from "@/lib/windows/desktop-shortcuts";
+import { toast } from "sonner";
 import { Player } from "@/components/games/ArcadePlayer";
 import { CLOUD_GAMES as CLOUD } from "@/lib/games/cloud-catalog";
 import { useDeveloperGames } from "@/lib/games/developer-games";
@@ -38,12 +42,14 @@ const SERVERS = [
 type Mode = "games" | "sites" | "cloud";
 type Game = { id: number; name: string; author: string; file: string; cover: string; url?: string };
 
-export function GamesView() {
+export function GamesView({ initialGame }: { initialGame?: ArcadeShortcutGame | undefined }) {
   const { data: custom = [] } = useDeveloperGames();
   const cloud = [...CLOUD, ...custom.filter(g => g.kind === "cloud")];
+  const prefs = usePrefs();
   const [mode, setMode] = useState<Mode | null>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    if (initialGame) { setMode("games"); setReady(true); return; }
     const m = localStorage.getItem("astra-games-mode");
     if (m === "games" || m === "sites" || m === "cloud") setMode(m);
     setReady(true);
@@ -77,21 +83,22 @@ export function GamesView() {
             </button>
           </div>
         </div>
-      ) : mode === "games" ? <Library /> : mode === "cloud" ? <CloudGrid key="cloud" list={cloud} note="AAA browser games from browser.wix3.com, plus cloud services. Big games like GTA V and Call of Duty stream from these services. Xbox Cloud needs an Xbox Game Pass Ultimate account, GeForce NOW needs games you own on Steam/Epic. now.gg and EasyFun are free." /> : <Sites key="sites" list={SERVERS} storeKey="astra-game-server" />}
+      ) : mode === "games" ? <Library initialGame={initialGame}/> : mode === "cloud" ? <CloudGrid key="cloud" list={cloud} note="AAA browser games from browser.wix3.com, plus cloud services. Big games like GTA V and Call of Duty stream from these services. Xbox Cloud needs an Xbox Game Pass Ultimate account, GeForce NOW needs games you own on Steam/Epic. now.gg and EasyFun are free." /> : <Sites key="sites" list={SERVERS} storeKey="astra-game-server" />}
     </div>
   );
 }
 
 type Tab = "all" | "favorites" | "recent" | "profile";
 
-function Library() {
+function Library({ initialGame }: { initialGame?: ArcadeShortcutGame | undefined }) {
+  const prefs = usePrefs();
   const { data: custom = [] } = useDeveloperGames();
   const [games, setGames] = useState<Game[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(120);
-  const [playing, setPlaying] = useState<Game | null>(null);
+  const [playing, setPlaying] = useState<Game | null>(initialGame ?? null);
   const stats = useGameStats();
 
   useEffect(() => {
@@ -148,6 +155,7 @@ function Library() {
                     <img src={g.url ? siteThumbnail(g.url) : `/api/public/games/cover/${g.cover}`} alt={g.name} loading="lazy" decoding="async" className="aspect-square w-full bg-muted object-cover" />
                     <p className="truncate px-2 py-1.5 text-sm">{g.name}</p>
                   </button>
+                  {prefs.layout === "windows" && prefs.console === "off" && <Button variant="secondary" size="icon" className="absolute bottom-9 left-1 size-7" title="Add to desktop" aria-label={`Add ${g.name} to desktop`} onClick={() => { addDesktopShortcut({ id: `arcade:${g.file}`, kind: "arcade", title: g.name, game: g, image: g.url ? siteThumbnail(g.url) : `/api/public/games/cover/${g.cover}` }); toast("Added to desktop"); }}><SquarePlus className="size-4"/></Button>}
                   <button onClick={() => toggleFavorite(g.name)} aria-label={fav ? "Remove from favorites" : "Add to favorites"}
                     className={`absolute right-1.5 top-1.5 rounded-full bg-background/80 p-1.5 backdrop-blur transition-opacity ${fav ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus:opacity-100"}`}>
                     <Heart className={`size-4 ${fav ? "fill-primary text-primary" : ""}`} />
@@ -231,6 +239,7 @@ function tileHue(name: string) { let h = 0; for (const c of name) h = (h * 31 + 
 // isolation" and their own site address to boot, which no in-page proxy frame can
 // provide. They open in their own tab by default; "inside Astra" stays as a fallback.
 function CloudGrid({ list, note }: { list: readonly { name: string; url: string }[]; note?: string }) {
+  const prefs = usePrefs();
   const [open, setOpen] = useState<string | null>(null);
   const [inline, setInline] = useState(false);
   const [q, setQ] = useState("");
@@ -247,6 +256,7 @@ function CloudGrid({ list, note }: { list: readonly { name: string; url: string 
             </div>
             <div className="space-y-3 p-5">
               <h2 className="text-lg font-semibold">{game.name}</h2>
+              {prefs.layout === "windows" && prefs.console === "off" && <Button variant="secondary" onClick={() => { addDesktopShortcut({ id: `cloud:${game.url}`, kind: "cloud", title: game.name, url: game.url, image: siteThumbnail(game.url) }); toast("Added to desktop"); }}><SquarePlus/>Add to desktop</Button>}
               <a href={`/play?url=${encodeURIComponent(game.url)}&name=${encodeURIComponent(game.name)}`} target="_blank" rel="noopener" className="block rounded-md bg-primary px-4 py-2.5 text-center font-medium text-primary-foreground hover:opacity-90">Play in new tab</a>
               <button onClick={() => setInline(true)} className="w-full rounded-md border px-4 py-2 text-sm text-muted-foreground hover:text-foreground">Try inside Astra anyway (may not load)</button>
             </div>

@@ -20,11 +20,12 @@ export const DESKTOP_APPS = [
 
 export function DesktopClock({ compact = false }: { compact?: boolean }) {
   const prefs = usePrefs();
+  const look = getAppearance(prefs);
   const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => { setNow(new Date()); const timer = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(timer); }, []);
+  useEffect(() => { setNow(new Date()); const timer = setInterval(() => setNow(new Date()), look.clockSeconds ? 1000 : 10000); return () => clearInterval(timer); }, [look.clockSeconds]);
   if (!getAppearance(prefs).showClock) return null;
   if (compact) return <time className="desktop-system-time">{now?.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}<span>{now?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></time>;
-  return <div className="desktop-clock" data-clock-font={getAppearance(prefs).clockFont} aria-label="Desktop date and time"><p className="desktop-clock-time">{now?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) ?? "\u00a0"}</p><h2>{now?.toLocaleDateString([], { weekday: "long" }) ?? "\u00a0"}</h2><p className="desktop-clock-date">{now?.toLocaleDateString([], { day: "numeric", month: "long", year: "numeric" }) ?? "\u00a0"}</p></div>;
+  return <div className="desktop-clock" data-clock-style={look.clockStyle ?? "weekday"} data-clock-font={look.clockFont} aria-label="Desktop date and time"><p className="desktop-clock-time">{now?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", ...(look.clockSeconds ? { second: "2-digit" } : {}), hour12: !look.clock24Hour }) ?? "\u00a0"}</p>{look.clockStyle !== "minimal" && <h2>{now?.toLocaleDateString([], { weekday: "long" }) ?? "\u00a0"}</h2>}{look.clockDate !== false && <p className="desktop-clock-date">{now?.toLocaleDateString([], { day: "numeric", month: "long", year: "numeric" }) ?? "\u00a0"}</p>}</div>;
 }
 
 export function DesktopStatusBar({ onApps, onSettings }: { onApps: () => void; onSettings: () => void }) {

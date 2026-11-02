@@ -21,6 +21,7 @@ import { AppIcon } from "@/components/astra/AppIcon";
 import { StoreView } from "./views/StoreView";
 import { DesktopWidgets } from "@/components/astra/DesktopWidgets";
 import { WebsiteFullscreenButton } from "@/components/FullscreenButton";
+import { removeDesktopShortcut, type DesktopShortcut } from "@/lib/windows/desktop-shortcuts";
 
 const MusicView = lazy(() => import("./views/MusicView").then(m => ({ default: m.MusicView })));
 const MoviesView = lazy(() => import("./views/MoviesView").then(m => ({ default: m.MoviesView })));
@@ -73,6 +74,12 @@ export function WindowsDesktop({ children, desktopOnly = false }: { children?: R
     else dispatch({ type: "open", window: makeWindow(uid(), tab, state.windows.length) });
     setStart(false); setTasks(false); setAddTab(null); setQuery("");
   };
+  const launchShortcut = (shortcut: DesktopShortcut) => {
+    if (shortcut.kind === "cloud") { window.open(`/play?url=${encodeURIComponent(shortcut.url)}&name=${encodeURIComponent(shortcut.title)}`, "_blank", "noopener"); return; }
+    if (shortcut.kind === "movie") { void navigate({ to: "/movies/title/$type/$id", params: { type: shortcut.mediaType, id: String(shortcut.tmdbId) } }); return; }
+    const tab: WindowTab = { id: uid(), app: "games", title: shortcut.title, game: shortcut.game };
+    dispatch({ type: "open", window: makeWindow(uid(), tab, state.windows.length) });
+  };
   useEffect(() => {
     if (desktopOnly || path === "/desktop" || path === "/home") return;
     const title = path.startsWith("/movies") ? "Movies & TV" : path.startsWith("/chat") ? "BirchBlock AI" : path.split("/")[1] ?? "App";
@@ -104,7 +111,7 @@ export function WindowsDesktop({ children, desktopOnly = false }: { children?: R
       case "store": return <StoreView onOpen={app => open(app)}/>;
       case "music": return <MusicView/>;
       case "movies": return <MoviesView/>;
-      case "games": return <GamesView/>;
+      case "games": return <GamesView initialGame={tab.game}/>;
       case "web": return <WebView/>;
       case "chat": return <AccountOnly><ChatView/></AccountOnly>;
       case "memory": return <AccountOnly><MemoryView/></AccountOnly>;
@@ -122,6 +129,7 @@ export function WindowsDesktop({ children, desktopOnly = false }: { children?: R
       <div className="windows-desktop-center"><DesktopClock/><Button variant="ghost" className="desktop-search windows-desktop-search" aria-label="Find an app" onClick={() => { setStart(true); setQuery(""); }}><Search/><span>Search apps</span><LayoutGrid/></Button></div>
       <div className="windows-shortcuts absolute left-3 top-4 flex flex-col gap-2">{APPS.filter(a => ["store","games","web","music","movies","settings"].includes(a.id)).map(a => <Button key={a.id} variant="ghost" className="windows-shortcut" onClick={() => open(a.id)} aria-label={`Open ${a.title}`}><span className="windows-app-icon" data-tone={a.tone}><AppIcon app={a.id}/></span><span>{a.title}</span></Button>)}</div>
       <div className="windows-brand pointer-events-none absolute bottom-6 right-7 text-right"><p className="text-sm font-semibold">BirchBlock</p><p className="mt-1 text-xs opacity-70">Windows desktop</p></div>
+      <div className="windows-custom-shortcuts" aria-label="Your desktop shortcuts">{(prefs.desktopShortcuts ?? []).map(shortcut => <div key={shortcut.id} className="group relative"><Button variant="ghost" className="windows-shortcut" onClick={() => launchShortcut(shortcut)} aria-label={`Open ${shortcut.title}`} title={shortcut.title}>{shortcut.image ? <img src={shortcut.image} alt="" className="size-10 rounded object-cover"/> : shortcut.kind === "movie" ? <Film/> : <Gamepad2/>}<span>{shortcut.title}</span></Button><Button variant="secondary" size="icon" className="absolute -right-1 -top-1 size-5 opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={`Remove ${shortcut.title} shortcut`} title="Remove shortcut" onClick={() => removeDesktopShortcut(shortcut.id)}><X className="size-3"/></Button></div>)}</div>
       <DesktopWidgets onMusic={() => open("music")}/>
       {state.windows.map((w, i) => {
         const compact = area.width < 640; const maximized = compact || w.mode === "maximized";

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus, UserRound, ArrowLeft, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { usePrefs } from "@/lib/astra/prefs";
+import { usePrefs, activatePreferenceAccount, getPrefsSnapshot } from "@/lib/astra/prefs";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +35,12 @@ export function AuthPage() {
     window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
   },[]);
   async function enter() {
+    const verified = await supabase.auth.getUser();
+    if (verified.data.user) await activatePreferenceAccount(verified.data.user.id);
     await router.invalidate();
     const complete=await status();
     if(!complete){send("setup-needed");return;}
-    send("account-confirmed");await navigate({to:visitDestination(p),replace:true});
+    send("account-confirmed");await navigate({to:visitDestination(getPrefsSnapshot()),replace:true});
   }
   async function submit(e:React.FormEvent) {
     e.preventDefault();setBusy(true);setMessage("");
