@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { MonitorPlus } from "lucide-react";
+import { SquarePlus } from "lucide-react";
 import { addDesktopShortcut } from "@/lib/windows/desktop-shortcuts";
 import { usePrefs } from "@/lib/astra/prefs";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ export default function MovieCard({ movie, index = 0, showRank, compact }: Props
     : 'movie';
   const rating = movie.vote_average?.toFixed(1);
   const rank = (index ?? 0) + 1;
-  const shortcut = prefs.layout === "windows" && prefs.console === "off" ? <Button variant="secondary" size="icon" className="absolute right-1 top-1 z-20 size-8" title="Add to desktop" aria-label={`Add ${title} to desktop`} onClick={() => { addDesktopShortcut({ id: `movie:${type}:${movie.id}`, kind: "movie", title, tmdbId: movie.id, mediaType: type, image: img(movie.poster_path) }); toast("Added to desktop"); }}><MonitorPlus className="size-4"/></Button> : null;
+  const shortcut = prefs.layout === "windows" && prefs.console === "off" ? <Button variant="secondary" size="icon" className="absolute right-1 top-1 z-20 size-8" title="Add to desktop" aria-label={`Add ${title} to desktop`} onClick={() => { addDesktopShortcut({ id: `movie:${type}:${movie.id}`, kind: "movie", title, tmdbId: movie.id, mediaType: type, image: img(movie.poster_path) }); toast("Added to desktop"); }}><SquarePlus className="size-4"/></Button> : null;
 
   if (showRank && rank <= 10) {
     return (
