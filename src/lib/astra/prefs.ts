@@ -133,6 +133,7 @@ let account: string | null | undefined;
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 let revision = 0;
 let accountReady = false;
+let accountLoad: Promise<void> | undefined;
 let saveStatus: "local" | "saving" | "saved" | "error" = "local";
 const statusSubs = new Set<() => void>();
 function status(value: typeof saveStatus) { saveStatus = value; statusSubs.forEach(f => f()); }
@@ -142,8 +143,12 @@ export function getPrefsSnapshot() { load(); return state; }
 export function subscribePrefs(f: () => void) { subs.add(f); return () => { subs.delete(f); }; }
 
 /** Identity switches never read another account's browser-wide settings. */
-export async function activatePreferenceAccount(userId: string | null) {
-  if (account === userId) return;
+export function activatePreferenceAccount(userId: string | null): Promise<void> {
+  if (account === userId) return accountLoad ?? Promise.resolve();
+  accountLoad = loadPreferenceAccount(userId);
+  return accountLoad;
+}
+async function loadPreferenceAccount(userId: string | null) {
   clearTimeout(saveTimer);
   const generation = ++revision;
   const selection = { layout: state.layout, console: state.console };

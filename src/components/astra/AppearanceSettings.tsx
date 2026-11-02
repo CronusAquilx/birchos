@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ACCENTS, PALETTES, getAppearance, resetAppearance, setAppearance, usePrefs } from "@/lib/astra/prefs";
+import { ACCENTS, PALETTES, getAppearance, resetAppearance, setAppearance, usePrefs, usePreferenceSaveStatus, flushPreferences } from "@/lib/astra/prefs";
 import { activeLayout, VISIBLE_LAYOUTS, LAYOUT_NAMES, type AppearanceLayout, type AppearanceProfile } from "@/lib/astra/appearance";
 import { cn } from "@/lib/utils";
 import landscape from "@/assets/console-landscape.jpg";
@@ -15,6 +15,9 @@ import windowsWallpaper from "@/assets/windows-wallpaper.jpg";
 import alpineWallpaper from "@/assets/alpine-wallpaper.jpg";
 import alpineMotion from "@/assets/alpine-motion.mp4.asset.json";
 import { WallpaperCatalog } from "./WallpaperCatalog";
+import { AppearancePreview } from "./AppearancePreview";
+import { PersonalizationControls } from "./PersonalizationControls";
+import { toast } from "sonner";
 
 function Setting({ label, children }: { label: string; children: ReactNode }) {
   return <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border py-4"><span className="text-sm">{label}</span><div className="max-w-full">{children}</div></div>;
@@ -22,6 +25,7 @@ function Setting({ label, children }: { label: string; children: ReactNode }) {
 
 export function AppearanceSettings() {
   const p = usePrefs();
+  const saved = usePreferenceSaveStatus();
   const [layout, setLayout] = useState<AppearanceLayout>(activeLayout(p));
   const look = getAppearance(p, layout);
   const set = (patch: Partial<AppearanceProfile>) => setAppearance(layout, patch);
@@ -33,10 +37,9 @@ export function AppearanceSettings() {
       {VISIBLE_LAYOUTS.map(id => <Button key={id} variant={layout === id ? "secondary" : "ghost"} aria-pressed={layout === id} onClick={() => { setLayout(id); setImage(""); setError(""); }}>{id === "sony" || id === "series" ? <Gamepad2/> : <LayoutPanelLeft/>}{LAYOUT_NAMES[id]}</Button>)}
     </nav>
     <div className="flex items-center justify-between gap-4 py-5"><h2 className="text-lg font-medium">{LAYOUT_NAMES[layout]}</h2><Button variant="ghost" size="icon" title="Reset this layout" aria-label="Reset this layout" onClick={() => resetAppearance(layout)}><RotateCcw/></Button></div>
-    <div className="appearance-preview relative mb-5 aspect-[3/1] min-h-32 overflow-hidden rounded-lg border bg-card" data-preview-layout={layout}>
-      {look.artwork && <img src={(look.wallpaperType === "video" ? look.wallpaperPoster : consoleMode ? look.consoleCustomBg : look.customBg) || landscape} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30"/>}
-      <div className="relative flex h-full items-center gap-5 p-5"><Gamepad2 className="size-8 text-star"/><div className="min-w-0"><p className="font-medium">{LAYOUT_NAMES[layout]}</p><p className="mt-1 text-xs text-muted-foreground">{PALETTES[look.palette].name} · {look.mode === "dark" ? "Dark" : "Light"}</p><div className="mt-4 flex gap-2" aria-hidden="true">{[0,1,2,3].map(n => <span key={n} className={cn("size-8 rounded border bg-secondary",n === 0 && "border-star ring-1 ring-star")}/>)}</div></div></div>
-    </div>
+    <AppearancePreview layout={layout} look={look}/>
+    <div className="my-3 flex items-center justify-between gap-2 text-xs text-muted-foreground"><span role="status">{saved === "saving" ? "Saving…" : saved === "saved" ? "Saved to your account" : saved === "error" ? "Account sync needs retry" : "Guest · this visit only"}</span>{saved === "error" && <Button size="sm" variant="ghost" onClick={() => void flushPreferences().catch(e => toast.error(e.message))}>Retry save</Button>}</div>
+    <PersonalizationControls look={look} onChange={set}/>
     <Setting label="Theme mode"><div className="flex gap-1">{(["dark", "light"] as const).map(mode => <Button key={mode} variant={look.mode === mode ? "secondary" : "ghost"} aria-pressed={look.mode === mode} onClick={() => set({ mode, palette: "default" })}>{mode === "dark" ? "Dark" : "Light"}</Button>)}</div></Setting>
     <Setting label="Color theme"><Select value={look.palette} onValueChange={palette => set({ palette: palette as AppearanceProfile["palette"] })}><SelectTrigger className="w-44"><SelectValue/></SelectTrigger><SelectContent>{Object.entries(PALETTES).map(([id, theme]) => <SelectItem key={id} value={id}>{theme.name}</SelectItem>)}</SelectContent></Select></Setting>
     <Setting label="Accent color"><div className="flex max-w-72 flex-wrap gap-2">{Object.keys(ACCENTS).map(id => <Button key={id} variant="ghost" size="icon" aria-label={`${id === "star" ? "Native" : id} accent`} title={id === "star" ? "Native accent" : id} aria-pressed={!look.customAccent && look.accent === id} onClick={() => set({ accent: id as AppearanceProfile["accent"], customAccent: "" })} className={cn("appearance-swatch size-8 rounded-full border",!look.customAccent && look.accent === id && "ring-2 ring-foreground ring-offset-2 ring-offset-background")} data-swatch={id}>{!look.customAccent && look.accent === id && <Check className="size-3"/>}</Button>)}<Input type="color" aria-label="Custom accent color" title="Custom accent color" value={look.customAccent || "#55bbcc"} onChange={e => set({ customAccent: e.target.value })} className="size-9 cursor-pointer p-1"/></div></Setting>
@@ -51,9 +54,9 @@ export function AppearanceSettings() {
     <Setting label="Background artwork"><Switch aria-label="Background artwork" checked={look.artwork} onCheckedChange={artwork => set({ artwork })}/></Setting>
     <Setting label="Animated wallpaper"><Select value={look.wallpaperMotion} onValueChange={v => set({ wallpaperMotion: v as AppearanceProfile["wallpaperMotion"] })}><SelectTrigger className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="drift">Slow drift</SelectItem><SelectItem value="zoom">Slow zoom</SelectItem></SelectContent></Select></Setting>
     {!consoleMode && <Setting label="Live wallpaper"><Select value={look.liveWallpaper} onValueChange={v => set({ liveWallpaper: v as AppearanceProfile["liveWallpaper"] })}><SelectTrigger aria-label="Live wallpaper" className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="rain">Rainfall</SelectItem><SelectItem value="water">Lake ripples</SelectItem></SelectContent></Select></Setting>}
-    <Setting label="Particles"><Select value={look.particles} onValueChange={v => set({ particles: v as AppearanceProfile["particles"] })}><SelectTrigger className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="stars">Starlight</SelectItem><SelectItem value="rain">Light trails</SelectItem></SelectContent></Select></Setting>
+    <Setting label="Particles"><Select value={look.particles} onValueChange={v => set({ particles: v as AppearanceProfile["particles"] })}><SelectTrigger aria-label="Particles" className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="stars">Starlight</SelectItem><SelectItem value="rain">Light trails</SelectItem><SelectItem value="snow">Snowfall</SelectItem><SelectItem value="fireflies">Fireflies</SelectItem></SelectContent></Select></Setting>
     <Setting label="Particle amount"><Select value={look.particleDensity} onValueChange={v => set({ particleDensity: v as AppearanceProfile["particleDensity"] })}><SelectTrigger className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="subtle">Subtle</SelectItem><SelectItem value="rich">Rich</SelectItem></SelectContent></Select></Setting>
-    <Setting label="App surfaces"><Select value={look.appTransparency} onValueChange={v => set({ appTransparency: v as AppearanceProfile["appTransparency"] })}><SelectTrigger className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="solid">Solid</SelectItem><SelectItem value="glass">Glass</SelectItem></SelectContent></Select></Setting>
+    <Setting label="App surfaces"><Select value={look.appTransparency} onValueChange={v => set({ appTransparency: v as AppearanceProfile["appTransparency"] })}><SelectTrigger aria-label="App surfaces" className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="solid">Solid</SelectItem><SelectItem value="glass">Glass</SelectItem><SelectItem value="liquid">Liquid glass</SelectItem></SelectContent></Select></Setting>
     <Setting label="Show clock"><Switch aria-label="Show clock" checked={look.showClock} onCheckedChange={showClock => set({ showClock })}/></Setting>
     {!consoleMode && <Setting label="Clock font"><Select value={look.clockFont} onValueChange={v => set({ clockFont: v as AppearanceProfile["clockFont"] })}><SelectTrigger aria-label="Clock font" className="w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="clean">Clean · Geist</SelectItem><SelectItem value="rounded">Rounded · Outfit</SelectItem><SelectItem value="serif">Editorial · Instrument</SelectItem><SelectItem value="digital">Digital · JetBrains</SelectItem></SelectContent></Select></Setting>}
     <Setting label="Reduce motion"><Switch aria-label="Reduce motion" checked={look.reduceMotion} onCheckedChange={reduceMotion => set({ reduceMotion })}/></Setting>
