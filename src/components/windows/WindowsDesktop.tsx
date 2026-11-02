@@ -55,8 +55,11 @@ export function WindowsDesktop({ children, desktopOnly = false }: { children?: R
   const path = useRouterState({ select: s => s.location.pathname });
   const [state, dispatch] = useReducer(desktopReducer, { windows: [], active: null });
   const [restored, setRestored] = useState(false);
+  const restoredKey = useRef<string | null>(null);
   const sessionKey = `birch-windows-session:${user?.id ?? "guest"}`;
   useEffect(() => {
+    if (restoredKey.current === sessionKey) return;
+    restoredKey.current = sessionKey;
     try {
       const saved = JSON.parse(sessionStorage.getItem(sessionKey) || "null") as { windows?: DesktopWindow[]; active?: string } | null;
       saved?.windows?.filter(w => w.tabs.every(t => t.app !== "route")).forEach(w => dispatch({ type: "open", window: w }));
