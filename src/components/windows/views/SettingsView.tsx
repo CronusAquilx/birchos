@@ -78,7 +78,10 @@ export function SettingsView() {
   const { user } = useAuth();
   const { data: developer } = useDeveloperGameAccess();
   const windows = p.layout === "windows" && p.console === "off";
-  const [tab, setTab] = useState<TabName>(windows ? "Home" : "Layout");
+  const [tab, updateTab] = useState<TabName>(windows ? "Home" : "Layout");
+  const tabKey = `birch-settings-tab:${user?.id ?? "guest"}`;
+  useEffect(() => { const saved = sessionStorage.getItem(tabKey); if (TABS.some(t => t === saved) && saved !== "Developer") updateTab(saved as TabName); }, [tabKey]);
+  const setTab = (value: TabName) => { updateTab(value); sessionStorage.setItem(tabKey, value); };
   const [filter, setFilter] = useState("");
   const set = (x: Partial<Prefs>) => setPrefs(x);
   const navigate = useNavigate();

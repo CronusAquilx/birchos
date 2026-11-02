@@ -2,9 +2,12 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import type { DesktopShortcut } from "@/lib/windows/desktop-shortcuts";
+import { syncAppearance, mergePreset, type AppearancePreset } from "./appearance-presets";
 import { activeLayout, initialAppearance, updateAppearance, type AppearanceLayout, type AppearanceProfile, type AppearanceProfiles } from "./appearance";
 
 export type Prefs = {
+  syncLayouts: boolean;
+  appearancePresets: AppearancePreset[];
   desktopShortcuts: DesktopShortcut[];
   musicTheme: string;
   musicBarHidden: boolean;
@@ -48,6 +51,8 @@ export type Prefs = {
 };
 
 export const DEFAULT_PREFS: Prefs = {
+  syncLayouts: true,
+  appearancePresets: [],
   desktopShortcuts: [],
   musicTheme: "midnight-void",
   musicBarHidden: false,
@@ -151,7 +156,8 @@ export function activatePreferenceAccount(userId: string | null): Promise<void> 
 async function loadPreferenceAccount(userId: string | null) {
   clearTimeout(saveTimer);
   const generation = ++revision;
-  const selection = { layout: state.layout, console: state.console };
+  let selection = { layout: state.layout, console: state.console };
+  try { const saved = JSON.parse(sessionStorage.getItem("birch-layout") || "null"); if (saved) selection = saved; } catch { /* invalid session */ }
   account = userId; accountReady = false; loaded = true;
   let cached: Partial<Prefs> = {};
   if (userId) { try { cached = JSON.parse(localStorage.getItem(`${KEY}:${userId}`) || "{}"); } catch { /* invalid cache */ } }
@@ -247,11 +253,15 @@ export function setPrefs(p: Partial<Prefs>) {
   for (const key of Object.keys(look) as (keyof AppearanceProfile)[]) {
     if (key in p) Object.assign(appearancePatch, { [key]: p[key as keyof Prefs] });
   }
-  const appearances = p.appearances ?? updateAppearance(state.appearances, previous, look, appearancePatch);
+  let appearances = p.appearances ?? updateAppearance(state.appearances, previous, look, appearancePatch);
+  if ((p.syncLayouts ?? state.syncLayouts) && (Object.keys(appearancePatch).length || p.syncLayouts === true || "layout" in p || "console" in p)) {
+    appearances = syncAppearance(appearances, { ...look, ...appearancePatch });
+  }
   state = { ...state, ...p, appearances };
   const next = activeLayout(state);
   const nextLook = appearances[next] ?? initialAppearance(DEFAULT_PREFS);
   state = { ...state, ...nextLook };
+  sessionStorage.setItem("birch-layout", JSON.stringify({ layout: state.layout, console: state.console }));
   if (account !== null) localStorage.setItem(KEY, serialize(state));
   if (account) {
     localStorage.setItem(`${KEY}:${account}`, serialize(state));
@@ -266,12 +276,33 @@ export function resetPrefs() {
 }
 
 export function getAppearance(p: Prefs, layout: AppearanceLayout = activeLayout(p)): AppearanceProfile {
-  return { ...initialAppearance(p), ...p.appearances[layout] };
+  const own = { ...initialAppearance(p), ...p.appearances[layout] };
+  if (!p.syncLayouts) return own;
+  const shared = p.appearances[activeLayout(p)] ?? own;
+  const wallpaper = shared.customBg || shared.consoleCustomBg;
+  return { ...own, ...shared, customBg: wallpaper, consoleCustomBg: wallpaper, consoleBg: wallpaper ? "custom" : shared.consoleBg, desktopWidgets: own.desktopWidgets };
 }
 
 export function setAppearance(layout: AppearanceLayout, patch: Partial<AppearanceProfile>) {
   load();
-  setPrefs({ appearances: updateAppearance(state.appearances, layout, getAppearance(state, layout), patch) });
+  const current = getAppearance(state, layout);
+  const look = { ...current, ...patch };
+  if ("customBg" in patch) look.consoleCustomBg = patch.customBg ?? "";
+  if ("consoleCustomBg" in patch) look.customBg = patch.consoleCustomBg ?? "";
+  const profiles = updateAppearance(state.appearances, layout, current, patch);
+  setPrefs({ appearances: state.syncLayouts ? syncAppearance(profiles, look) : profiles });
+}
+
+export function saveAppearancePreset(name: string) {
+  load();
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const look = { ...getAppearance(state) };
+  delete look.desktopWidgets;
+  setPrefs({ appearancePresets: mergePreset(state.appearancePresets ?? [], { id: crypto.randomUUID(), name: trimmed.slice(0, 60), look }) });
+}
+export function applyAppearancePreset(preset: AppearancePreset) {
+  setAppearance(activeLayout(getPrefsSnapshot()), preset.look);
 }
 
 export function resetAppearance(layout: AppearanceLayout) {
