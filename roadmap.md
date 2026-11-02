@@ -1,5 +1,12 @@
 # Birchbeat import roadmap
 
+## Current request — shared looks and cinema
+- [ ] Use the chosen uploaded logo.
+- [ ] Synchronize looks across layouts and add account-owned presets in Settings and basic-URL opening.
+- [ ] Keep the current page and account on refresh without repeating opening choices.
+- [ ] Upgrade shared Movies presentation and add star / realistic raindrop effects.
+- [ ] Run focused preference/visit tests and a small browser check.
+
 ## Current request — account personalization
 - [x] Expand shared appearance controls and preview: original dots/accents, liquid glass, brightness, snow/fireflies, effect speed and clocks.
 - [x] Add game/movie Windows desktop shortcuts and removal with stable title IDs and existing launch paths.
