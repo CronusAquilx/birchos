@@ -20,7 +20,7 @@ const CAPTIONS = [
 ] as const;
 
 export const Route = createFileRoute("/_authenticated/movies/watch/$type/$id")({
-  head: () => ({ meta: [{ title: "Watch \u2014 BirchBlock Movies" }, { name: "description", content: "Watch your selected movie or show with BirchBlock playback controls." }, { property: "og:title", content: "Watch \u2014 BirchBlock Movies" }, { property: "og:description", content: "Watch your selected movie or show with BirchBlock playback controls." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  head: () => ({ meta: [{ title: "Watch \u2014 BIRCH OS Movies" }, { name: "description", content: "Watch your selected movie or show with BIRCH OS playback controls." }, { property: "og:title", content: "Watch \u2014 BIRCH OS Movies" }, { property: "og:description", content: "Watch your selected movie or show with BIRCH OS playback controls." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   validateSearch: (q: Record<string, unknown>): { s?: number; e?: number; t?: number } => {
     const num = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.floor(Number(v)) : undefined);
     const out: { s?: number; e?: number; t?: number } = {};
