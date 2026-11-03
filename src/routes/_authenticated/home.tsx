@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
     meta: [
       { title: "Home — BIRCH OS" },
-      { name: "description", content: "Your BIRCH OS launcher: AI, web, movies and games in one place." },
+      { name: "description", content: "Your BIRCH OS launcher: apps, web, music and movies in one place." },
       { property: "og:title", content: "Home — BIRCH OS" },
       { property: "og:description", content: "Your BIRCH OS launcher: AI, web, movies and games in one place." },
       { property: "og:type", content: "website" },
