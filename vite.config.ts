@@ -7,12 +7,7 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { liveVoiceDev } from "./live-vite-plugin";
 
-// BUILD_TARGET=node (used only by `build:node` for Render) switches Nitro to its Node preset.
-// Without it, the Lovable Cloudflare build is unchanged.
-const nodeTarget = process.env.BUILD_TARGET === "node";
-
 export default defineConfig({
-  ...(nodeTarget ? { nitro: { preset: "node-middleware" } } : {}),
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
