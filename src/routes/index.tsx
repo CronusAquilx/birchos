@@ -7,10 +7,10 @@ import { AstraMark } from "@/components/astra/Mark";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "BIRCH OS — Your personal space" },
-      { name: "description", content: "Choose your layout and saved look, then enjoy movies, games and music in BIRCH OS." },
-      { property: "og:title", content: "BIRCH OS — Your personal space" },
-      { property: "og:description", content: "Choose your layout and saved look, then enjoy movies, games and music in BIRCH OS." },
+      { title: "BIRCH OS — a desktop environment in your browser" },
+      { name: "description", content: "BIRCH OS is a browser-based desktop environment: choose a layout, manage windows and apps, and shape every detail of your shell through system settings and personalization presets." },
+      { property: "og:title", content: "BIRCH OS — a desktop environment in your browser" },
+      { property: "og:description", content: "A browser-based desktop shell with window and app management, system settings, and saved personalization presets." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

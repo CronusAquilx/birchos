@@ -1,4 +1,8 @@
-# Welcome to your Lovable project
+# BIRCH OS
+
+BIRCH OS is a browser-based desktop environment and software-development/interface-design project. It renders a full desktop shell in the browser — draggable app windows, a launcher and app library, system settings, and multiple switchable layouts (Windows-style desktop, console skins, and a handheld-style shell) — all built with interactive web technologies.
+
+Personalization is a first-class feature: live wallpapers, accent themes, liquid-glass surfaces, particle and weather effects, clock styles, and per-account presets that sync across every layout. Media apps (music, movies, web browsing) and optional game shortcuts live inside the shell as ordinary apps.
 
 This project was built with [Lovable](https://lovable.dev).
 
